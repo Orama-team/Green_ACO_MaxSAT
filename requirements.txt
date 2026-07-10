@@ -1,0 +1,8 @@
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+scikit-learn>=1.3
+xgboost>=2.0
+matplotlib>=3.7
+jupyter>=1.0
+optuna>=3.4       # optional: only needed for method.benchmark.run_optuna_search
