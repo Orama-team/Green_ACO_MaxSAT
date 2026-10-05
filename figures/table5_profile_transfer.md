@@ -1,0 +1,14 @@
+Table 5: Representative nearest-neighbour proxy assignments (log-space distanced; lower is a closer structural match).
+
+| Unprofiled instance | Donor referenced | Match distance (log) |
+| --- | --- | --- |
+| judgment-aggregation-ja-maxham-preflib-00049-00000003 | decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.094
+| judgment-aggregation-ja-maxham-preflib-00049-00000092 | decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.121
+| optic-gen_add_6_carry_991 | decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.3186
+| MaxSATQueriesinInterpretableClassifiers-compas_train_5_DNF_5_1 | min-fill-MinFill_R0_myciel5 | 0.391
+| xai-mindset2-lymphography | decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.4034
+| xai-mindset2-cleveland-nominal | decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.416
+| gen-hyper-tw-GenHyperTW_b01 | gen-hyper-tw-GenHyperTW_grid4d_3 | 0.458
+| xai-mindset2-house-votes-84 | decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.49
+| optimizing-BDDs-tic-tac-toe-un-wcnf_incomplete_improved_1_2019_5 | decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree | 0.641
+| gen-hyper-tw-GenHyperTW_uf20-099 | gen-hyper-tw-GenHyperTW_grid4d_3 | 0.728

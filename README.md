@@ -38,8 +38,21 @@ from the last completed task rather than starting over.
 
 This matters more than anything else here, so it comes first.
 
-Energy is **measured**, not modelled: a CodeCarbon tracker reports the power
-the CPU actually drew. A measurement is a property of a machine, so:
+Energy is **estimated, not metered**: CodeCarbon reports the power the CPU
+drew, and on this platform it does so in **TDP-based estimation mode** — it
+multiplies CPU utilisation by the CPU's TDP and integrates over execution time.
+Verified on this machine: `tracking_mode: machine`, `cpu_power ≈ 4.1 W` on an
+idle-ish sample. There is no RAPL hardware counter here, so the reported
+joules are a *model* of consumption rather than a direct measurement.
+
+That has a consequence worth stating plainly: **energy is essentially
+proportional to wall-clock time**, so how fast the code runs directly changes
+how much energy a run consumes, and therefore how many iterations fit inside a
+fixed budget. See `docs/BACKENDS.md`.
+
+Being an estimate also means the figures are comparative proxies — valid
+across algorithms, instances and budgets because all were measured under the
+same methodology, but not absolute statements about electricity drawn.
 
 | Quantity | Reproducible? |
 |---|---|
@@ -64,8 +77,10 @@ concurrent workers upward. `--n-jobs` is therefore **recorded in every run
 manifest** rather than left to an automatic default. Reproduce the effect with
 `python tests/probe_cpu_contention.py solo` / `loaded 7`.
 
-A related consequence, specific to this method: **implementation speed is part
-of the method's behaviour under an energy budget.** See `docs/BACKENDS.md`.
+Because energy tracks wall-clock time, **implementation speed is part of the
+method's behaviour under an energy budget**: a faster implementation completes
+more iterations inside the same budget and therefore returns a different, often
+better, solution. See `docs/BACKENDS.md`.
 
 ---
 

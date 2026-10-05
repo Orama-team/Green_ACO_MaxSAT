@@ -34,6 +34,11 @@ from greenaco import paths  # noqa: E402
 from greenaco.metrics import (rank_methods, reference_profiles_only,  # noqa: E402
                               run_operator_tests, tests_to_frame,
                               zscore_by_context)
+from greenaco.tables import (TITLE_CARBON, TITLE_MACHINE,  # noqa: E402
+                             TITLE_PREDICTOR_FEATURES, TITLE_PROXY,
+                             machine_table, table_carbon_intensities,
+                             table_predictor_features,
+                             table_proxy_assignments)
 
 
 def read(name: str, results: Path, shipped: Path):
@@ -253,6 +258,33 @@ def table_summary(runs: pd.DataFrame, out: Path) -> None:
     print("  -> wrote figures/table_summary_ranking.md")
 
 
+def reference_tables(profiles=None) -> None:
+    """Write the paper's reference tables (1, 2, 3, 5)."""
+    out = paths.FIGURES
+
+    def _write(frame: pd.DataFrame, stem: str, title: str) -> None:
+        path = out / f"{stem}.csv"
+        frame.to_csv(path, index=False)
+        header = "| " + " | ".join(frame.columns) + " |"
+        divider = "| " + " | ".join("---" for _ in frame.columns) + " |"
+        body = ["| " + " | ".join(str(v) for v in row)
+                for row in frame.itertuples(index=False)]
+        (out / f"{stem}.md").write_text(
+            f"{title}\n\n" + "\n".join([header, divider, *body]) + "\n",
+            encoding="utf-8")
+        print(f"  -> wrote {path.name} and {stem}.md")
+
+    _write(table_carbon_intensities(), "table1_carbon_intensities",
+           TITLE_CARBON)
+    _write(table_predictor_features(), "table2_predictor_features",
+           TITLE_PREDICTOR_FEATURES)
+    _write(machine_table(), "table3_machine_configuration", TITLE_MACHINE)
+    if profiles is not None:
+        proxy = table_proxy_assignments(profiles)
+        if not proxy.empty:
+            _write(proxy, "table5_profile_transfer", TITLE_PROXY)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Build all figures.")
     parser.add_argument("--subset", default="all", choices=["all", "core"])
@@ -268,6 +300,7 @@ def main() -> int:
     print(f"  reading from {results}")
 
     profiles = read(f"operator_profiles_{tag}.csv", results, paths.SHIPPED)
+    reference_tables(profiles)
     if profiles is not None:
         fig_operator_profiles(profiles)
         fig_operator_tests(profiles, out)

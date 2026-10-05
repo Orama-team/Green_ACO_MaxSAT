@@ -25,10 +25,11 @@ are chosen blind and can overrun the budget badly.
 
 from __future__ import annotations
 
+import math
 import random
 import statistics
 import time
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from .config import GreenACOConfig, REGIME_EXPLOITATION
 from .energy import EnergyMeter
@@ -110,6 +111,103 @@ def profile_operator(bench, operator_name: str, regime: str,
         "best_known": bench.best_known,
         "wall_time_s": round(time.time() - t0, 3),
     }
+
+
+def structural_features(n_vars: int, n_clauses: int) -> Dict[str, float]:
+    """The three structural features used for nearest-neighbour matching.
+
+    Matching happens in log space because the raw quantities span five orders of
+    magnitude across the benchmark; without the transform the largest instances
+    would dominate every distance.
+    """
+    ratio = n_clauses / n_vars if n_vars else 0.0
+    return {"n_vars": float(n_vars), "n_clauses": float(n_clauses),
+            "clauses_per_var": ratio}
+
+
+def log_space_distance(a: Dict[str, float], b: Dict[str, float]) -> float:
+    """Squared Euclidean distance between two feature vectors in log space.
+
+    A zero feature would send ``log`` to -inf, so each term falls back to the
+    raw value when the feature is zero on either side.
+    """
+    total = 0.0
+    for key in ("n_vars", "n_clauses", "clauses_per_var"):
+        x, y = float(a[key]), float(b[key])
+        if x > 0 and y > 0:
+            total += (math.log(x) - math.log(y)) ** 2
+        else:
+            total += (x - y) ** 2
+    return total
+
+
+def nearest_reference(target: Dict[str, float],
+                      references: Sequence[Dict[str, float]]) -> str:
+    """Name of the closest reference instance to ``target``."""
+    return min(references,
+               key=lambda r: log_space_distance(target, r["features"]))["name"]
+
+
+def _vars_of(bench: dict) -> int:
+    """Variable count from a manifest row (``vars``) or a Benchmark (``n_vars``)."""
+    return int(bench.get("n_vars", bench.get("vars", 0)))
+
+
+def _clauses_of(bench: dict) -> int:
+    return int(bench.get("n_clauses", bench.get("clauses", 0)))
+
+
+def transfer_profiles(rows: List[Dict],
+                      benchmarks: Sequence[dict]) -> List[Dict]:
+    """Extend measured profiles to unprofiled instances by nearest neighbour.
+
+    Profiling every instance directly is impractical: the measured cost is
+    dominated by ``clause_restart_greedy``, which costs minutes per call on the
+    largest instances. A small set of instances is therefore measured
+    directly, and every other instance inherits the full profile block of its
+    closest measured neighbour.
+
+    Transfer is applied per *instance*, not per row, so an instance inherits a
+    consistent, complete profile across all operators and both regimes.
+    Returned rows carry ``profile_source``, ``proxy_of`` and
+    ``match_log_dist`` so the transfer is auditable.
+    """
+    sizes = {b["benchmark"]: (_vars_of(b), _clauses_of(b)) for b in benchmarks}
+    measured_names = {r["benchmark"] for r in rows if r.get("n_runs", 0) > 0}
+
+    references = [{"name": name,
+                   "features": structural_features(*sizes[name])}
+                  for name in sorted(measured_names) if name in sizes]
+
+    by_benchmark: Dict[str, List[Dict]] = {}
+    for row in rows:
+        by_benchmark.setdefault(row["benchmark"], []).append(row)
+
+    out: List[Dict] = []
+    for name, (n_vars, n_clauses) in sizes.items():
+        if name in by_benchmark:
+            for row in by_benchmark[name]:
+                enriched = dict(row)
+                enriched.setdefault("profile_source", "real")
+                out.append(enriched)
+            continue
+
+        features = structural_features(n_vars, n_clauses)
+        donor = nearest_reference(features, references)
+        distance = log_space_distance(
+            features, next(r["features"] for r in references
+                           if r["name"] == donor))
+        for row in by_benchmark.get(donor, []):
+            copied = dict(row)
+            copied["benchmark"] = name
+            copied["n_vars"] = n_vars
+            copied["n_clauses"] = n_clauses
+            copied["n_runs"] = 0
+            copied["profile_source"] = "proxy"
+            copied["proxy_of"] = donor
+            copied["match_log_dist"] = round(distance, 6)
+            out.append(copied)
+    return out
 
 
 def profiles_for(benchmark: str, rows: List[Dict]) -> Dict[str, Dict]:
