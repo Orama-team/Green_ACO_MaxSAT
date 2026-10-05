@@ -67,6 +67,8 @@ def read(name: str, results: Path, shipped: Path):
             col = "benchmark" if "benchmark" in df.columns else "instance"
             if col not in df.columns:
                 return df
+            from greenaco.data import load_manifest
+
             manifest = load_manifest()
             keep = set(manifest.query("mandatory == True")["benchmark"])
             filtered = df[df[col].astype(str).isin(keep)]

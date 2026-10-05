@@ -45,27 +45,54 @@ TITLE_PREDICTOR_FEATURES = (
     "computed pre-solve in a single pass over the clause list; none uses "
     "solver output, quality, or the chosen budget.")
 
-# Mirrors budget_predictor.feature_extractor; kept here so the table can be
-# produced without importing the optional xgboost stack.
-PREDICTOR_FEATURE_DESCRIPTIONS: List[tuple] = [
-    ("nvars", "Number of Boolean variables."),
-    ("nclauses", "Number of clauses."),
-    ("clause/var ratio", "Clause density m/n."),
-    ("mean clause len", "Average literals per clause."),
-    ("std clause len", "Spread of clause lengths."),
-    ("mean var degree", "Average number of clauses a variable appears in."),
-    ("std var degree", "Spread of variable occurrence counts."),
-    ("max var degree", "Largest variable occurrence count."),
-    ("frac. unit clauses", "Fraction of clauses with one literal."),
-    ("frac. binary clauses", "Fraction of clauses with two literals."),
-    ("frac. Horn clauses", "Fraction of clauses with ≤1 positive literal."),
-    ("positive literal frac.", "Fraction of all literals that are positive."),
-]
+# Display names as they appear in the paper; keys are the extractor names in
+# budget_predictor.feature_extractor.FEATURE_NAMES and must stay in step.
+_PREDICTOR_DISPLAY_NAMES = {
+    "n_vars": "nvars",
+    "n_clauses": "nclauses",
+    "clause_var_ratio": "clause/var ratio",
+    "mean_clause_len": "mean clause len",
+    "std_clause_len": "std clause len",
+    "mean_var_degree": "mean var degree",
+    "std_var_degree": "std var degree",
+    "max_var_degree": "max var degree",
+    "frac_unit_clauses": "frac. unit clauses",
+    "frac_binary_clauses": "frac. binary clauses",
+    "frac_horn_clauses": "frac. Horn clauses",
+    "positive_literal_frac": "positive literal frac.",
+}
+
+
+def _predictor_rows() -> List[tuple]:
+    """Table 2 rows, derived from the extractor so they cannot drift.
+
+    The extractor is imported lazily: feature_extractor needs only numpy,
+    never xgboost, so building the table still works without the optional
+    [predictor] extra. A feature added to the extractor without a display name
+    raises KeyError here instead of shipping a silently incomplete table.
+    """
+    from budget_predictor.feature_extractor import (
+        FEATURE_DESCRIPTIONS,
+        FEATURE_NAMES,
+    )
+
+    return [
+        (name, _PREDICTOR_DISPLAY_NAMES[name], FEATURE_DESCRIPTIONS[name])
+        for name in FEATURE_NAMES
+    ]
+
+
+# The table keeps the paper's display names; rows are derived at call time from
+# the extractor (see _predictor_rows), so the published table cannot drift from
+# the features the model actually trains on. No module-level copy is kept: a
+# stored duplicate is exactly how the two diverged unnoticed. Anyone needing
+# the rows calls table_predictor_features() or _predictor_rows().
 
 
 def table_predictor_features() -> pd.DataFrame:
-    return pd.DataFrame(PREDICTOR_FEATURE_DESCRIPTIONS,
-                        columns=["Feature", "Description"])
+    rows = [(display, description)
+            for _, display, description in _predictor_rows()]
+    return pd.DataFrame(rows, columns=["Feature", "Description"])
 
 
 # ── Table 3 ──────────────────────────────────────────────────────────────────

@@ -2,15 +2,15 @@ Table 2: Structural features used by the budget predictor. All are computed pre-
 
 | Feature | Description |
 | --- | --- |
-| nvars | Number of Boolean variables.
+| nvars | Number of Boolean variables in the instance.
 | nclauses | Number of clauses.
-| clause/var ratio | Clause density m/n.
-| mean clause len | Average literals per clause.
+| clause/var ratio | Clause density: n_clauses / n_vars.
+| mean clause len | Average number of literals per clause.
 | std clause len | Spread of clause lengths.
-| mean var degree | Average number of clauses a variable appears in.
+| mean var degree | Average number of clauses in which a variable appears.
 | std var degree | Spread of variable occurrence counts.
 | max var degree | Largest variable occurrence count.
 | frac. unit clauses | Fraction of clauses with one literal.
 | frac. binary clauses | Fraction of clauses with two literals.
-| frac. Horn clauses | Fraction of clauses with ≤1 positive literal.
+| frac. Horn clauses | Fraction of Horn clauses, with at most one positive literal.
 | positive literal frac. | Fraction of all literals that are positive.
