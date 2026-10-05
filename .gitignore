@@ -48,3 +48,8 @@ results/MANIFEST.json
 # figures/ and results/*.csv are generated but intentionally tracked: the
 # figures are the deliverable, and results/shipped/ is the recorded evidence
 # behind them.
+
+# Trained models are build artefacts. A pickle also executes arbitrary code
+on load, so the binary is not committed; run scripts/train_model.py to
+# regenerate it. models/README.md explains how.
+models/*.pkl

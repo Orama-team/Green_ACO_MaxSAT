@@ -46,8 +46,8 @@ def build_tabular_dataset_from_pck(pck_path: str,
                                    limit: int | None = None,
                                    limit_strategy: str = "stratified") -> pd.DataFrame:
     """Build the CSV-ready tabular dataset directly from the benchmark pickle."""
-    from method.config import DEFAULT_BEST_PARAMS, GreenACOConfig
-    from method.solver import GreenACOSolver
+    from greenaco.config import DEFAULT_BEST_PARAMS, GreenACOConfig
+    from greenaco.solver import GreenACOSolver
 
     with open(pck_path, "rb") as f:
         records = pickle.load(f)
@@ -87,8 +87,8 @@ def export_tabular_dataset_from_pck(pck_path: str,
     if not existing_keys:
         _write_header(out_csv, columns)
 
-    from method.config import DEFAULT_BEST_PARAMS, GreenACOConfig
-    from method.solver import GreenACOSolver
+    from greenaco.config import DEFAULT_BEST_PARAMS, GreenACOConfig
+    from greenaco.solver import GreenACOSolver
 
     with open(pck_path, "rb") as f:
         records = pickle.load(f)
@@ -306,7 +306,7 @@ def _append_rows(out_csv: str, rows: List[Dict], columns: Sequence[str]) -> int:
 
 
 def _record_to_instance(record):
-    from method.parser import CNFInstance
+    from greenaco.cnf import CNFInstance
 
     clauses = [tuple(int(lit) for lit in clause) for clause in record["clauses_list"]]
     instance_name = os.path.splitext(record["file"])[0]
