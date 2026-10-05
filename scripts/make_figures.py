@@ -335,12 +335,12 @@ def main() -> int:
 
     runs = read(f"comparison_runs_{tag}.csv", results, paths.SHIPPED)
 
-    # Green ACO's own comparison row comes from the 4-instance sweep used for
-    # the method comparison (results/shipped/green_aco_variants.csv), not from
-    # the full benchmark sweep. Using the latter would compare a mean over 54
-    # instances against methods measured on 4, and at a single budget against
-    # means over all three.
-    own = read("green_aco_variants.csv", results, paths.SHIPPED)
+    # Green ACO's own comparison row comes from the 4-instance sweep reported
+    # in the article (results/shipped/green_aco_best_params.csv), not from the
+    # full benchmark sweep. The latter would compare a mean over 54 instances
+    # against methods measured on 4. The comparison is a mean over all three
+    # energy budgets, which is the basis the article's RSS figures match exactly.
+    own = read("green_aco_best_params.csv", results, paths.SHIPPED)
     if own is not None and runs is not None:
         # Replace any existing Green ACO rows rather than appending: the file
         # carries a row derived from the full benchmark sweep, which would

@@ -1,0 +1,13 @@
+instance,budget_j,qualite_pct,energie_joules,budget_utilise_pct,score_per_joule,co2_micrograms,pheromone_savings_pct,stopped_reason,nb_iterations,variant
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,98.9808520344018,456.710065,100.0,0.216726,61655.8588,0.0,budget_exhausted,10,Green ACO
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,99.18668432003028,1014.629406,100.0,0.097757,136974.9698,0.0,budget_exhausted,33,Green ACO
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,99.99888739305064,1290.991758,64.55,0.077459,174283.8873,42.86,best_plateau,14,Green ACO
+min-fill-MinFill_R0_myciel5,400,94.88621298150332,414.743552,100.0,0.228783,55990.3795,0.0,budget_exhausted,10,Green ACO
+min-fill-MinFill_R0_myciel5,1000,95.9020215596456,1004.559867,100.0,0.095467,135615.582,0.0,budget_exhausted,24,Green ACO
+min-fill-MinFill_R0_myciel5,2000,96.19460368836346,2001.484744,100.0,0.048062,270200.4404,0.0,budget_exhausted,49,Green ACO
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,98.60298453304304,417.235515,100.0,0.236325,56326.7945,0.0,budget_exhausted,12,Green ACO
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,98.7363360094344,1010.560849,100.0,0.097704,136425.7146,0.0,budget_exhausted,29,Green ACO
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,99.79135483285708,2004.443062,100.0,0.049785,270599.8134,0.0,budget_exhausted,16,Green ACO
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,99.01369301515328,400.051345,100.0,0.247502,54006.9316,0.0,budget_exhausted,10,Green ACO
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,99.99871908183786,1009.228028,100.0,0.099084,136245.7838,0.0,budget_exhausted,8,Green ACO
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,99.99871908183786,810.193247,40.51,0.123426,109376.0883,40.0,best_plateau,15,Green ACO
