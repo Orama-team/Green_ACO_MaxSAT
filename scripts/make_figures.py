@@ -334,17 +334,33 @@ def main() -> int:
         fig_convergence(summary)
 
     runs = read(f"comparison_runs_{tag}.csv", results, paths.SHIPPED)
+
+    # Green ACO's own comparison row comes from the 4-instance sweep used for
+    # the method comparison (results/shipped/green_aco_variants.csv), not from
+    # the full benchmark sweep. Using the latter would compare a mean over 54
+    # instances against methods measured on 4, and at a single budget against
+    # means over all three.
+    own = read("green_aco_variants.csv", results, paths.SHIPPED)
+    if own is not None and runs is not None:
+        # Replace any existing Green ACO rows rather than appending: the file
+        # carries a row derived from the full benchmark sweep, which would
+        # otherwise be averaged together with the comparison row.
+        runs = runs[runs["method"] != "Green ACO"]
+        own = own.rename(columns={"variant": "method"})
+        own["method"] = "Green ACO"
+        own["family"] = "ACO + EI/J"
+        shared = {"method", "family", "qualite_pct", "energie_joules",
+                  "score_per_joule", "co2_micrograms"}
+        runs = pd.concat([runs, own[[c for c in shared if c in own.columns]]],
+                         ignore_index=True)
+
+    # Variants are averaged over all budgets, matching every other row: the
+    # comparison is a mean across the three energy budgets, not a single one.
     variants = None
     for name in ("green_rss_results.csv", "green_de_results.csv"):
         frame = read(name, results, paths.SHIPPED)
         if frame is None:
             continue
-        # The variant files span several budgets; the comparison table is
-        # assembled at a single budget (1000 J, the one Green ACO is reported
-        # at). Averaging across budgets here would compare a 400 J run against a
-        # 1000 J one and make quality-per-Joule meaningless.
-        if "budget_j" in frame.columns:
-            frame = frame[frame["budget_j"] == 1000]
         frame = frame.rename(columns={"variant": "method"})
         frame["family"] = "Green ACO variant"
         variants = frame if variants is None else pd.concat(
