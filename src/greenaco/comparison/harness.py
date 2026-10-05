@@ -87,29 +87,29 @@ def run_method(bench, method: str, meter: Optional[EnergyMeter] = None,
         def _call(_shared=None):
             return fn(formula, bench.n_vars)
 
-    result, timed_out = run_with_timeout(_call, timeout_s)
+    # Energy is measured around the method itself, so the joules recorded are
+    # the solver's. The meter wraps the whole (method + timeout) call: the
+    # previous form measured only a recount of the finished assignment.
+    (result, timed_out), energy_j = meter.measure(
+        run_with_timeout, _call, timeout_s)
     elapsed = time.time() - t0
 
     assignment = None
-    stats: Dict = {}
-    energy_j = 0.0
 
     if result:
         # GA solvers return (assignment, stats); the ACO variants return a
-        # dict that already carries its own statistics.
+        # dict that already carries its own statistics. Only the assignment is
+        # needed here: the reported quality is re-counted below rather than
+        # trusted from the method.
         if isinstance(result, tuple):
-            assignment, stats = result[0], (result[1] or {})
+            assignment = result[0]
         elif isinstance(result, dict):
             assignment = result.get("assignment") or result.get("best_assignment")
-            stats = result
         else:
-            assignment, stats = result, {}
+            assignment = result
 
     if assignment is not None:
-        def _count():
-            return count_satisfied_clauses(formula, assignment)
-
-        _res, energy_j = meter.measure(_count)
+        counted = count_satisfied_clauses(formula, assignment)
 
     if assignment is None:
         # Nothing usable: the method failed or produced no incumbent.
@@ -130,7 +130,7 @@ def run_method(bench, method: str, meter: Optional[EnergyMeter] = None,
             "params": method_params(method),
         }
 
-    best = count_satisfied_clauses(formula, assignment)
+    best = counted
     green = compute_green_metrics(best, bench.n_clauses, energy_j,
                                   meter.region)
 

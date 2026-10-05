@@ -25,7 +25,8 @@ Usage:
     python tests/probe_cpu_contention.py solo
     python tests/probe_cpu_contention.py loaded 7
 """
-import sys, time, subprocess, os
+import sys, time, subprocess
+
 sys.path.insert(0, "src"); sys.path.insert(0, ".")
 
 from src.greenaco.data import load_benchmark

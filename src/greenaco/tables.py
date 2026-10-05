@@ -18,8 +18,7 @@ Titles follow the paper so a generated table can be compared against it.
 from __future__ import annotations
 
 import platform
-from pathlib import Path
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pandas as pd
 

@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import lzma
 from dataclasses import dataclass, field
-from typing import List, Sequence, Tuple
+from typing import List, Tuple
 
 __all__ = [
     "Instance",

@@ -17,7 +17,6 @@ from __future__ import annotations
 from itertools import combinations
 from typing import Dict, List, Sequence
 
-import numpy as np
 import pandas as pd
 from scipy import stats as sp_stats
 

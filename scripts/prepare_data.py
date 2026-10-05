@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from _pipeline import banner, base_parser  # noqa: E402
-from greenaco.data import load_benchmark, load_manifest, select_subset  # noqa: E402
+from greenaco.data import load_manifest, select_subset  # noqa: E402
 from greenaco.wcnf import parse_wcnf  # noqa: E402
 
 

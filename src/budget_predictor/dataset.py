@@ -23,9 +23,8 @@ from typing import Dict, List, Sequence
 import numpy as np
 import pandas as pd
 
-from .cnf_parser import parse_dimacs_cnf
 from .feature_extractor import FEATURE_NAMES, extract_features
-from .preprocessing import build_optimal_budget_targets, features_to_matrix
+from .preprocessing import features_to_matrix
 
 
 @dataclass

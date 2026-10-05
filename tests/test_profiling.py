@@ -8,8 +8,7 @@ import pytest
 from greenaco import paths
 from greenaco.config import REGIME_EXPLOITATION
 from greenaco.energy import EnergyMeter
-from greenaco.profile import (profile_operator, profiles_for,
-                              profile_operator as _profile, load_profiles)
+from greenaco.profile import profile_operator, profiles_for, load_profiles
 
 from conftest import make_benchmark
 
@@ -25,8 +24,8 @@ def test_two_regimes_are_defined():
 @pytest.mark.parametrize("regime", ["easy", "hard"])
 def test_profile_row_has_required_fields(operator, regime):
     bench = make_benchmark(n_vars=60, n_clauses=200, seed=1)
-    row = _profile(bench, operator, regime, meter=EnergyMeter(),
-                   n_steps=5, seed=42)
+    row = profile_operator(bench, operator, regime, meter=EnergyMeter(),
+                           n_steps=5, seed=42)
     for key in ("benchmark", "operator", "regime", "mean_cost_j",
                 "std_cost_j", "mean_df", "std_df", "n_runs"):
         assert key in row

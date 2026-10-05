@@ -9,6 +9,7 @@ by however many neighbours they happen to have.
 
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 
 from greenaco.metrics import (
@@ -21,14 +22,12 @@ from greenaco.metrics import (
 N_OPS = 3
 
 
-def paired_frame(n_contexts: int = 6, shuffle: bool = False) -> "pd.DataFrame":
+def paired_frame(n_contexts: int = 6, shuffle: bool = False) -> pd.DataFrame:
     """Two operators measured on the same (benchmark, regime) pairs.
 
     ``op_a`` beats ``op_b`` by exactly 2 units everywhere, so any sane paired
     test must see it, whatever the row order.
     """
-    import pandas as pd
-
     rows = []
     for i in range(n_contexts):
         rows.append({"operator": "op_a", "benchmark": f"bench_{i}",
@@ -41,7 +40,7 @@ def paired_frame(n_contexts: int = 6, shuffle: bool = False) -> "pd.DataFrame":
     return frame
 
 
-def test_pairing_does_not_depend_on_row_order():
+def test_metrics_pairing_does_not_depend_on_row_order():
     ordered = wilcoxon_by_context(paired_frame(shuffle=False), "op_a", "op_b")
     shuffled = wilcoxon_by_context(paired_frame(shuffle=True), "op_a", "op_b")
     assert ordered["n_pairs"] == shuffled["n_pairs"] == 6
@@ -63,8 +62,6 @@ def test_pairing_refuses_too_few_pairs():
 
 
 def test_table_lists_one_row_per_pair():
-    import pandas as pd
-
     frame = pd.concat([paired_frame(),
                        paired_frame().assign(operator="op_c")])
     table = wilcoxon_table(frame)
@@ -73,9 +70,7 @@ def test_table_lists_one_row_per_pair():
 
 
 def test_reference_filter_drops_transferred_copies():
-    """Transferred profiles have ``n_runs == 0``; only measured rows remain."""
-    import pandas as pd
-
+    """Transferred copies have `n_runs == 0`; measured rows remain."""
     frame = pd.DataFrame([
         {"operator": "a", "mean_df": 5.0, "n_runs": 10},
         {"operator": "a", "mean_df": 5.0, "n_runs": 0},
@@ -87,8 +82,6 @@ def test_reference_filter_drops_transferred_copies():
 
 
 def test_reference_filter_without_column_passes_through():
-    import pandas as pd
-
     frame = pd.DataFrame([{"operator": "a", "mean_df": 5.0}])
     assert reference_profiles_only(frame) is frame or \
         reference_profiles_only(frame).equals(frame)
@@ -97,8 +90,6 @@ def test_reference_filter_without_column_passes_through():
 def test_full_battery_on_measured_rows_only():
     """``run_operator_tests`` over rows with ``n_runs > 0`` must not crash and
     must count the measured samples only."""
-    import pandas as pd
-
     measured = paired_frame().assign(n_runs=10)
     copies = paired_frame().assign(n_runs=0)
     tests = run_operator_tests(reference_profiles_only(

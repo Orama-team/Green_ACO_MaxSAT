@@ -8,8 +8,6 @@ run resumes nothing.
 
 from __future__ import annotations
 
-import pytest
-
 from greenaco.runner import (
     CheckpointStore,
     atomic_write_json,

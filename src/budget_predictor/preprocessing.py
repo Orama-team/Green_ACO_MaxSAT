@@ -13,7 +13,7 @@ instance-structural features, so it can be estimated for *new*
 instances without running the solver at every candidate budget.
 """
 
-from typing import List, Tuple
+from typing import List
 
 import numpy as np
 import pandas as pd

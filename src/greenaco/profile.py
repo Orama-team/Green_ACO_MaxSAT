@@ -35,7 +35,6 @@ from .config import GreenACOConfig, REGIME_EXPLOITATION
 from .energy import EnergyMeter
 from .operators import build_operator_pool
 from .solver import build_eta_matrix, build_greedy_assignment
-from .wcnf import count_satisfied_clauses, get_unsatisfied_clause_indices
 
 PROFILE_COLUMNS = [
     "benchmark",

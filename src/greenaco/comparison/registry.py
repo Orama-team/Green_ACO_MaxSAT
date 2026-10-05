@@ -19,7 +19,7 @@ import math
 from typing import Dict, List
 
 from .aco import ACO_SHARED, aco_sat, aco_sat_elitist, acs_sat, mmas_sat  # noqa: F401
-from .ga import GA_CLASS_MAP, TUNED_PARAMS as GA_PARAMS, build_ga, make_ga_solver
+from .ga import TUNED_PARAMS as GA_PARAMS, build_ga, make_ga_solver
 
 # Display order of the comparison table.
 METHOD_ORDER: List[str] = [

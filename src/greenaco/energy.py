@@ -22,8 +22,7 @@ Carbon accounting follows the standard formula
 
 from __future__ import annotations
 
-import math
-from typing import Callable, Dict, Optional, Tuple
+from typing import Callable, Dict, Tuple
 
 # Grid carbon intensities, in gCO2eq per kWh.
 #
@@ -115,20 +114,20 @@ class EnergyMeter:
                     result = fn(*args, **kwargs)
                 finally:
                     data = self._tracker.stop_task(name)
-                joules = max(float(data.energy_consumed) * JOULES_PER_KWH, 1e-9)
+                joules = max(float(data.energy_consumed) * JOULES_PER_KWH, 1e-6)
                 return result, joules
 
             before = float(self._tracker.final_emissions_data.energy_consumed or 0.0)
             result = fn(*args, **kwargs)
             after = float(self._tracker.final_emissions_data.energy_consumed or 0.0)
-            joules = max((after - before) * JOULES_PER_KWH, 1e-9)
+            joules = max((after - before) * JOULES_PER_KWH, 1e-6)
             return result, joules
 
         import time
 
         t0 = time.perf_counter()
         result = fn(*args, **kwargs)
-        joules = max((time.perf_counter() - t0) * 20.0, 1e-9)
+        joules = max((time.perf_counter() - t0) * 20.0, 1e-6)
         return result, joules
 
     def finalize(self) -> None:

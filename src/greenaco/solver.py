@@ -24,9 +24,9 @@ from __future__ import annotations
 
 import random
 import time
-from typing import Callable, Dict, List, Optional
+from typing import Dict, List, Optional
 
-from .config import (FLIP_OPS, GreenACOConfig, OPERATOR_POOL,
+from .config import (FLIP_OPS, GreenACOConfig,
                      REGIME_QUALITY_THRESHOLD)
 from .energy import EnergyMeter, compute_green_metrics
 from .operators import (IndexedBackend, RescanBackend, build_operator_pool,

@@ -48,7 +48,51 @@ joules are a *model* of consumption rather than a direct measurement.
 That has a consequence worth stating plainly: **energy is essentially
 proportional to wall-clock time**, so how fast the code runs directly changes
 how much energy a run consumes, and therefore how many iterations fit inside a
-fixed budget. See `docs/BACKENDS.md`.
+fixed budget.
+
+### The two backends
+
+Two evaluation backends are available, selected by `config.backend`:
+
+| backend | behaviour | cost |
+|---|---|---|
+| `rescan` (default) | the reference implementation | full formula rescan per candidate |
+| `indexed` | **bit-identical results** | variable→clauses index and incremental score deltas |
+
+`tests/test_operators.py` asserts the two agree exactly under a fixed seed.
+
+`clause_restart_greedy` on `min-fill-MinFill_R0_myciel5` (15 416 variables,
+109 371 clauses), one operator call:
+
+| operator | rescan | indexed | speedup |
+|---|---|---|---|
+| walksat | 2.77 s | 2.19 s | 1.3× |
+| focused_vns | 0.31 s | 0.35 s | 0.9× |
+| clause_restart_greedy | 214.1 s | 0.36 s | **592×** |
+
+The reference cost implies **≈12 hours** for a 200-step profiling pass on that
+one operator/instance pair, which is why the pipeline cannot complete on large
+instances without the indexed path.
+
+**The caveat that matters: the backends are logically identical, but a full
+run still gives different results between them.** Energy is measured from
+wall-clock CPU draw, and the budget loop is driven by measured energy, so **a
+change in implementation speed is a change in the method's behaviour under the
+energy constraint.** On a 400 J run: `rescan` burns the budget in 2 iterations
+(381 J/iteration, 101 violated clauses); `indexed` completes 17 (16.7
+J/iteration, 1 violated clause).
+
+Consequences for the reported work:
+
+- `rescan` is the faithful reproduction of the original measurements, which
+  were produced with the reference implementation on this class of hardware.
+- `indexed` is the same algorithm, and is the only tractable option on the
+  full 54-instance benchmark, but its energy figures reflect a faster
+  implementation and are **not** comparable with the original `rescan`-based
+  numbers.
+
+Which backend is "the method" is a scientific decision, not an engineering
+one, and is recorded in `results/MANIFEST.json` for every run.
 
 Being an estimate also means the figures are comparative proxies — valid
 across algorithms, instances and budgets because all were measured under the
@@ -80,7 +124,7 @@ manifest** rather than left to an automatic default. Reproduce the effect with
 Because energy tracks wall-clock time, **implementation speed is part of the
 method's behaviour under an energy budget**: a faster implementation completes
 more iterations inside the same budget and therefore returns a different, often
-better, solution. See `docs/BACKENDS.md`.
+better, solution (see "The two backends" above).
 
 ---
 
@@ -181,7 +225,6 @@ configs/        tuned parameters
 results/        generated CSVs; results/shipped/ holds the recorded results
 figures/        generated figures and tables
 tests/          the test suite, run with `pytest`
-docs/           BACKENDS.md — why the two backends exist
 ```
 
 ### One file per result, not two

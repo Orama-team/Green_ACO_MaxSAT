@@ -27,7 +27,6 @@ The pheromone updates are exact ports of the original routines.
 from __future__ import annotations
 
 import random
-from typing import Callable, Dict, List, Sequence, Tuple
 
 from .wcnf import (
     count_satisfied_clauses,
