@@ -11,9 +11,8 @@ historical numbers: all rows then come from one machine, in one session, under
 one measurement regime.
 
 A hard wall-clock limit applies to each call. On expiry the best-so-far state
-is harvested rather than discarded, matching how the original runs recorded
-partial results; such rows are marked ``timeout=True`` and excluded from the
-aggregate.
+is harvested rather than discarded, so a slow method still yields a usable
+solution; such rows are marked ``timeout=True`` and left out of the aggregate.
 """
 
 from __future__ import annotations

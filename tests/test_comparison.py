@@ -7,7 +7,7 @@ import pytest
 from greenaco.comparison.aco import (aco_sat, aco_sat_elitist, acs_sat,
                                      mmas_sat)
 from greenaco.comparison.harness import run_method
-from greenaco.comparison.registry import (ACO_FUNCTIONS, EXCLUDED, FAMILY,
+from greenaco.comparison.registry import (ACO_FUNCTIONS, FAMILY,
                                           GA_METHODS, METHOD_ORDER,
                                           clean_params, get_solver)
 from greenaco.energy import EnergyMeter
@@ -18,15 +18,11 @@ from conftest import make_benchmark
 COMPARISON_METHODS = [m for m in METHOD_ORDER if m != "Green ACO"]
 
 
-def test_exactly_seven_methods_are_compared():
+def test_comparison_has_seven_methods_plus_green_aco():
     assert len(COMPARISON_METHODS) == 7
     assert "Green ACO" in METHOD_ORDER
 
 
-def test_non_terminating_methods_are_excluded():
-    assert set(EXCLUDED) == {"NL-ACO", "FACO"} or "NL-ACO" in EXCLUDED
-    for name in EXCLUDED:
-        assert name not in COMPARISON_METHODS
 
 
 def test_every_method_has_a_family():

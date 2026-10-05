@@ -14,7 +14,6 @@ elapsed)``.
   ClassicGA   binary tournament, 1-point crossover, bit-flip, elitism
   AdaptiveGA  Pc/Pm adapted to the convergence state (Fu et al., 2018)
   KCBasedGA   semantic distance + crowding replacement, incremental fitness
-  MemeticGA   GA refined by hill climbing on the best individuals
 
 ``TUNED_PARAMS`` below holds the calibrated settings used for the comparison,
 taken from the GA calibration artefacts in ``data/comparison/``.
@@ -406,101 +405,8 @@ class KCBasedGA:
         return best_ind.bits, best_ind.fitness, best_ind.fitness / instance.n_clauses, elapsed
 
 
-
-# ── Méthode AG-4 : AG Mémétique — AG + Hill Climbing ─────────────────────────
-
-class MemeticGA:
-    def __init__(self, pop_size=100, crossover_prob=0.85,
-                 mutation_prob=None, max_gen=5000,
-                 ls_depth=30, ls_fraction=0.10,
-                 timeout=300, seed=42):
-        self.pop_size       = pop_size
-        self.crossover_prob = crossover_prob
-        self.mutation_prob  = mutation_prob
-        self.max_gen        = max_gen
-        self.ls_depth       = ls_depth
-        self.ls_fraction    = ls_fraction
-        self.timeout        = timeout
-        self.seed           = seed
-
-    def _hill_climbing(self, ind, instance, max_steps):
-        ind = ind[:]
-        fit = instance.evaluate(ind)
-        for _ in range(max_steps):
-            best_gain, best_var = 0, -1
-            for var in range(instance.n_vars):
-                ind[var] = not ind[var]
-                gain     = instance.evaluate(ind) - fit
-                if gain > best_gain:
-                    best_gain, best_var = gain, var
-                ind[var] = not ind[var]
-            if best_var < 0:
-                break
-            ind[best_var] = not ind[best_var]
-            fit += best_gain
-        return ind, fit
-
-    def _uniform_crossover(self, p1, p2):
-        mask = [random.random() < 0.5 for _ in range(len(p1))]
-        c1   = [p1[i] if mask[i] else p2[i] for i in range(len(p1))]
-        c2   = [p2[i] if mask[i] else p1[i] for i in range(len(p1))]
-        return c1, c2
-
-    def _mutate(self, ind, pm):
-        return [not b if random.random() < pm else b for b in ind]
-
-    def _tournament_select(self, pop, fits):
-        i1, i2 = random.randrange(len(pop)), random.randrange(len(pop))
-        return pop[i1] if fits[i1] >= fits[i2] else pop[i2]
-
-    def solve(self, instance):
-        random.seed(self.seed)
-        n    = instance.n_vars
-        pm   = self.mutation_prob if self.mutation_prob else 1.0 / n
-        k_ls = max(1, int(self.pop_size * self.ls_fraction))
-
-        pop, fits = [], []
-        for _ in range(self.pop_size):
-            bits = [random.random() < 0.5 for _ in range(n)]
-            bits, fit = self._hill_climbing(bits, instance, min(5, self.ls_depth))
-            pop.append(bits); fits.append(fit)
-
-        best_idx             = max(range(len(fits)), key=lambda i: fits[i])
-        best_ind, best_fit   = pop[best_idx][:], fits[best_idx]
-        start                = time.time()
-
-        for _ in range(self.max_gen):
-            if time.time() - start > self.timeout or best_fit == instance.n_clauses:
-                break
-            new_pop, new_fits = [best_ind[:]], [best_fit]
-            while len(new_pop) < self.pop_size:
-                p1 = self._tournament_select(pop, fits)
-                p2 = self._tournament_select(pop, fits)
-                if random.random() < self.crossover_prob:
-                    c1, c2 = self._uniform_crossover(p1, p2)
-                else:
-                    c1, c2 = p1[:], p2[:]
-                c1, c2 = self._mutate(c1, pm), self._mutate(c2, pm)
-                new_pop.extend([c1, c2])
-                new_fits.extend([instance.evaluate(c1), instance.evaluate(c2)])
-            pop, fits = new_pop[:self.pop_size], new_fits[:self.pop_size]
-
-            top = sorted(range(len(fits)), key=lambda i: fits[i], reverse=True)[:k_ls]
-            for idx in top:
-                if time.time() - start > self.timeout:
-                    break
-                pop[idx], fits[idx] = self._hill_climbing(pop[idx], instance, self.ls_depth)
-
-            idx = max(range(len(fits)), key=lambda i: fits[i])
-            if fits[idx] > best_fit:
-                best_fit, best_ind = fits[idx], pop[idx][:]
-
-        elapsed = time.time() - start
-        return best_ind, best_fit, best_fit / instance.n_clauses, elapsed
-
 GA_CLASS_MAP.update({
     "AG Classique": ClassicGA,
     "AG Adaptatif": AdaptiveGA,
     "AG + KC": KCBasedGA,
-    "AG + Loc.Search": MemeticGA,
 })

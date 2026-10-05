@@ -3,8 +3,9 @@ comparison/registry.py
 ======================
 The set of methods entering the comparison, and how each is invoked.
 
-Seven methods qualify for the comparison: three GA variants and four ACO
-variants, each of which produced usable results on the comparison instances.
+Three GA variants and four ACO variants, each of which produced usable results
+on the comparison instances, plus Green ACO itself: eight rows.
+
 Green ACO is added by the runner, giving an eight-row comparison table.
 
 Parameters come from the calibration artefacts in ``data/comparison/``. They
@@ -17,8 +18,7 @@ from __future__ import annotations
 import math
 from typing import Dict, List
 
-from .aco import (ACO_SHARED, EXCLUDED, aco_sat, aco_sat_elitist,  # noqa: F401
-                  acs_sat, mmas_sat)
+from .aco import ACO_SHARED, aco_sat, aco_sat_elitist, acs_sat, mmas_sat  # noqa: F401
 from .ga import GA_CLASS_MAP, TUNED_PARAMS as GA_PARAMS, build_ga, make_ga_solver
 
 # Display order of the comparison table.

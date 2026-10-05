@@ -10,9 +10,7 @@ computed Green ACO numbers with historical rows would compare across machines
 and measurement regimes.
 
 Seven methods qualify -- three GA and four ACO variants, each of which produced
-usable results on the comparison instances. Three further variants in the
-earlier codebase (AG + Loc.Search, FACO, NL-ACO) do not terminate within the
-time budget on any of them and are excluded rather than reported as zeros.
+usable results on the comparison instances.
 
 Each method carries its calibrated parameters into the output, so a table can
 be traced back to the settings that produced it.
@@ -35,7 +33,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from _pipeline import (SIZE_THRESHOLD_CLAUSES, banner, base_parser,  # noqa: E402
                        energy_meter, results_dir, write_csv)
 from greenaco.comparison.harness import run_method  # noqa: E402
-from greenaco.comparison.registry import (EXCLUDED, FAMILY,  # noqa: E402
+from greenaco.comparison.registry import (FAMILY,  # noqa: E402
                                           METHOD_ORDER)
 from greenaco.config import GreenACOConfig, TUNED_PARAMS  # noqa: E402
 from greenaco.data import load_benchmark  # noqa: E402
@@ -60,9 +58,6 @@ def main() -> int:
     bench = load_benchmark(args.subset)
     print(f"  subset {args.subset}: {len(bench)} instances x "
           f"{len(COMPARISON_METHODS)} methods")
-    if EXCLUDED:
-        print(f"  excluded     : {', '.join(EXCLUDED)} (do not terminate "
-              f"within the time budget)")
 
     profile_file = out / f"operator_profiles_{tag}.csv"
     profiles = {}
@@ -141,7 +136,6 @@ def main() -> int:
     write_manifest(out, {
         "stage": "comparison", "subset": args.subset,
         "methods": COMPARISON_METHODS,
-        "excluded_methods": list(EXCLUDED),
         "timeout_s": args.timeout, "green_aco_budget_j": budget,
         "seed": args.seed, "n_jobs": args.n_jobs, "machine": machine_info(),
     })

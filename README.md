@@ -132,11 +132,6 @@ one session, rather than mixing fresh numbers with historical rows:
 `AG Classique` · `AG Adaptatif` · `AG + KC` · `AS-SAT` · `AS-SAT Elitiste` ·
 `MMAS` · `ACS`
 
-Three further variants present in the earlier codebase — `AG + Loc.Search`,
-`FACO`, `NL-ACO` — do not terminate within the time budget on any comparison
-instance. They are excluded rather than reported as zeros, and the exclusion is
-recorded in the run manifest.
-
 ### Figures
 
 | figure | reads |
