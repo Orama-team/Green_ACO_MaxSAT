@@ -48,6 +48,42 @@ def pairwise_mannwhitney(groups: Dict[str, Sequence[float]]) -> List[Dict]:
     return out
 
 
+def wilcoxon_by_context(df: pd.DataFrame, op1: str, op2: str,
+                        value_col: str = "mean_df") -> Dict:
+    """Paired Wilcoxon signed-rank between two operators.
+
+    Pairs are formed by ``(benchmark, regime)``: for a given instance and
+    regime, each operator was measured under the same conditions, so their gains
+    are directly comparable. Rows are sorted on those keys before pairing, so
+    the pairing does not depend on row order.
+
+    ``zero_method="pratt"`` keeps the zero differences in the ranking, which is
+    the right choice here because operators tie exactly on instances where one
+    clause pattern dominates.
+    """
+    left = (df[df["operator"] == op1].sort_values(["benchmark", "regime"])
+            [value_col].dropna().values)
+    right = (df[df["operator"] == op2].sort_values(["benchmark", "regime"])
+             [value_col].dropna().values)
+    n = min(len(left), len(right))
+    if n < 5:
+        return {"op1": op1, "op2": op2, "W": float("nan"),
+                "p_value": float("nan"), "significant": False,
+                "n_pairs": n, "note": "fewer than 5 pairs"}
+    w, p = sp_stats.wilcoxon(left[:n], right[:n], zero_method="pratt")
+    return {"op1": op1, "op2": op2, "W": float(w), "p_value": float(p),
+            "significant": bool(p < ALPHA), "n_pairs": n}
+
+
+def wilcoxon_table(df: pd.DataFrame, value_col: str = "mean_df") -> pd.DataFrame:
+    """Wilcoxon signed-rank for every operator pair."""
+    operators = list(dict.fromkeys(df["operator"]))
+    rows = [wilcoxon_by_context(df, a, b, value_col)
+            for a, b in combinations(operators, 2)]
+    return pd.DataFrame(rows, columns=["op1", "op2", "W", "p_value",
+                                       "significant", "n_pairs"])
+
+
 def wilcoxon_paired(sample_a: Sequence[float],
                     sample_b: Sequence[float]) -> Dict:
     """Wilcoxon signed-rank test for paired samples."""

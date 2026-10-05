@@ -182,8 +182,8 @@ def fig_convergence(summary: pd.DataFrame) -> None:
     """Search depth and quality against the energy budget."""
     apply_style()
     fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Convergence under the energy budget", fontsize=13,
-                 fontweight="bold")
+    fig.suptitle("Test results across the benchmark, by energy budget "
+                 "(mean over instances)", fontsize=13, fontweight="bold")
     groups = summary.groupby(summary["instance"].map(short_instance))
 
     for name, grp in groups:
@@ -203,7 +203,7 @@ def fig_convergence(summary: pd.DataFrame) -> None:
     save(fig, "fig_convergence.png")
 
 
-def fig_method_comparison(runs: pd.DataFrame) -> None:
+def fig_method_comparison(runs: pd.DataFrame, variants=None) -> None:
     """Green ACO against the comparison methods, on four green metrics."""
     apply_style()
     metrics = [("qualite_pct", "Quality (%)"),
@@ -211,12 +211,20 @@ def fig_method_comparison(runs: pd.DataFrame) -> None:
                ("energie_joules", "Energy (J)"),
                ("co2_micrograms", "CO2 footprint (ug CO2eq)")]
 
+    frames = [runs]
+    if variants is not None and not variants.empty:
+        keep = {"method", "family", "qualite_pct", "energie_joules",
+                "score_per_joule", "co2_micrograms"}
+        frames.append(variants[[c for c in keep if c in variants.columns]])
+    data = pd.concat(frames, ignore_index=True)
+
     fig, axes = plt.subplots(1, 4, figsize=(19, 4.8))
-    fig.suptitle("Green ACO compared with the GA and ACO variants",
+    fig.suptitle("Comparison of solution quality and energy efficiency "
+                 "across Green ACO, ACO, RSS and GA variants",
                  fontsize=13, fontweight="bold")
 
     for ax, (metric, label) in zip(axes, metrics):
-        agg = (runs[runs[metric].notna()]
+        agg = (data[data[metric].notna()]
                .groupby(["method", "family"])[metric].mean().reset_index()
                .sort_values(metric, ascending=False))
         colors = [FAMILY_COLORS.get(f, "#888") for f in agg["family"]]
@@ -230,9 +238,20 @@ def fig_method_comparison(runs: pd.DataFrame) -> None:
     save(fig, "fig_method_comparison.png")
 
 
-def table_summary(runs: pd.DataFrame, out: Path) -> None:
-    """The ranking table, written as CSV and Markdown."""
-    valid = runs[runs["qualite_pct"].notna()]
+def table_summary(runs: pd.DataFrame, out: Path, variants=None) -> None:
+    """The ranking table, written as CSV and Markdown.
+
+    ``variants`` optionally carries additional single-method variants (RSS, DE)
+    measured on the same instances, so they appear in the same comparison.
+    """
+    frames = [runs]
+    if variants is not None and not variants.empty:
+        keep = {"method", "family", "instance", "n_clauses", "qualite_pct",
+                "energie_joules", "score_per_joule", "co2_micrograms"}
+        frames.append(variants[[c for c in keep if c in variants.columns]])
+    combined = pd.concat(frames, ignore_index=True)
+
+    valid = combined[combined["qualite_pct"].notna()]
     if valid.empty:
         return
     ranking = rank_methods(valid, group_col="method")
@@ -315,9 +334,25 @@ def main() -> int:
         fig_convergence(summary)
 
     runs = read(f"comparison_runs_{tag}.csv", results, paths.SHIPPED)
+    variants = None
+    for name in ("green_rss_results.csv", "green_de_results.csv"):
+        frame = read(name, results, paths.SHIPPED)
+        if frame is None:
+            continue
+        # The variant files span several budgets; the comparison table is
+        # assembled at a single budget (1000 J, the one Green ACO is reported
+        # at). Averaging across budgets here would compare a 400 J run against a
+        # 1000 J one and make quality-per-Joule meaningless.
+        if "budget_j" in frame.columns:
+            frame = frame[frame["budget_j"] == 1000]
+        frame = frame.rename(columns={"variant": "method"})
+        frame["family"] = "Green ACO variant"
+        variants = frame if variants is None else pd.concat(
+            [variants, frame], ignore_index=True)
+
     if runs is not None:
-        fig_method_comparison(runs)
-        table_summary(runs, out)
+        fig_method_comparison(runs, variants)
+        table_summary(runs, out, variants)
 
     print("\n  figures complete")
     return 0

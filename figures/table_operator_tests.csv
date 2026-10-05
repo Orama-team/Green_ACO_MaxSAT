@@ -1,4 +1,4 @@
 op1,op2,U,p_value,significant
-clause_restart_greedy,focused_vns,174.0,0.0005004809065270882,True
-clause_restart_greedy,walksat,142.0,0.04531276960710141,True
-focused_vns,walksat,47.0,0.02006473217680959,True
+clause_restart_greedy,focused_vns,62.0,0.0018882244778923654,True
+clause_restart_greedy,walksat,54.0,0.020668220668220667,True
+focused_vns,walksat,17.0,0.12668561292298344,False
