@@ -29,7 +29,7 @@ from typing import Dict, List, Optional
 from .config import (FLIP_OPS, GreenACOConfig,
                      REGIME_QUALITY_THRESHOLD)
 from .energy import EnergyMeter, compute_green_metrics
-from .operators import (IndexedBackend, RescanBackend, build_operator_pool,
+from .operators import (RescanBackend, build_operator_pool,
                         update_pheromone, update_pheromone_sparse)
 from .scheduler import EIJScheduler
 from .wcnf import count_satisfied_clauses
@@ -174,8 +174,7 @@ class GreenACOSolver:
             pheromone = [[cfg.tau0, cfg.tau0] for _ in range(n_vars)]
             eta = build_eta_matrix(formula, n_vars)
 
-            backend = (IndexedBackend() if self.backend_name == "indexed"
-                       else RescanBackend())
+            backend = RescanBackend()
             backend.prepare(formula, n_vars)
             pool = build_operator_pool(cfg.active_operators, backend)
 

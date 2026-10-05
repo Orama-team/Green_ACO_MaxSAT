@@ -50,6 +50,10 @@ results/MANIFEST.json
 # behind them.
 
 # Trained models are build artefacts. A pickle also executes arbitrary code
-on load, so the binary is not committed; run scripts/train_model.py to
+# on load, so the binary is not committed; run scripts/train_model.py to
 # regenerate it. models/README.md explains how.
 models/*.pkl
+
+# Large dataset archives
+*.zip
+mse24_instances.zip

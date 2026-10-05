@@ -18,7 +18,7 @@ Two ways to use it:
                   in results/shipped/. Fast, and the right default for anyone
                   who just wants the figures.
 
-  (default)      run the experiments. The full 54-instance sweep is a long job;
+  (default)      run the experiments. The full 50-instance sweep is a long job;
                   it is resumable, so an interrupted run continues where it
                   stopped. Use --subset core for a much shorter run, and
                   --stages to run part of the pipeline.
@@ -105,7 +105,7 @@ def main() -> int:
         if run(f"stage: {stage}", argv) != 0:
             failures.append(stage)
 
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     if run(f"Figures ({tag})",
            ["scripts/make_figures.py", "--subset", args.subset]) != 0:
         failures.append("figures")

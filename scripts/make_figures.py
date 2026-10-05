@@ -57,12 +57,12 @@ def read(name: str, results: Path, shipped: Path):
             return pd.read_csv(candidate)
 
     stem, _, scope = Path(name).stem.rpartition("_")
-    if scope in ("all54", "core") and stem:
-        for base in (results / f"{stem}_all54.csv", shipped / f"{stem}_all54.csv"):
+    if scope in ("all50", "core") and stem:
+        for base in (results / f"{stem}_all50.csv", shipped / f"{stem}_all50.csv"):
             if not base.exists():
                 continue
             df = pd.read_csv(base)
-            if scope == "all54":
+            if scope == "all50":
                 return df
             col = "benchmark" if "benchmark" in df.columns else "instance"
             if col not in df.columns:
@@ -221,64 +221,137 @@ def fig_ablation(df: pd.DataFrame) -> None:
     save(fig, "fig_ablation.png")
 
 
-def fig_convergence(summary: pd.DataFrame) -> None:
-    """Search depth and quality against the energy budget."""
+def fig_test_results(summary: pd.DataFrame) -> None:
+    """Article Figure 2: score-per-Joule for every instance at every budget.
+
+    One cell per (instance, budget), coloured by the mean score per Joule over
+    the runs at that budget, so the whole benchmark is readable at a glance:
+    bright at 400 J (little energy spent), cooling as the budget grows because
+    Q/J falls while quality barely rises.
+
+    Rows are ordered by the score-per-Joule at 400 J, the budget where
+    instances differ most, so the heatmap reads as one gradient. Values above
+    the 97th percentile are clipped to keep a few extreme instances from
+    flattening the rest of the scale; the colourbar's arrow marks the clipping.
+    """
     apply_style()
-    fig, axes = plt.subplots(1, 2, figsize=(14, 5))
-    fig.suptitle("Test results across the benchmark, by energy budget "
-                 "(mean over instances)", fontsize=13, fontweight="bold")
-    groups = summary.groupby(summary["instance"].map(short_instance))
+    matrix = summary.pivot(index="instance", columns="budget_j",
+                           values="mean_score_per_joule")
+    matrix = matrix.sort_values(by=matrix.columns[0], ascending=False,
+                                na_position="last")
+    values = matrix.to_numpy(dtype=float)
+    clip = float(np.nanpercentile(values, 97))
 
-    for name, grp in groups:
-        if "mean_nb_iterations" in summary.columns:
-            axes[0].plot(grp["budget_j"], grp["mean_nb_iterations"],
-                         marker="o", label=name)
-        axes[1].plot(grp["budget_j"], grp["mean_qualite_pct"],
-                     marker="o", label=name)
+    height = max(6.0, 0.26 * len(matrix))
+    fig, ax = plt.subplots(figsize=(7.5, height))
+    im = ax.imshow(values, cmap="viridis", aspect="auto",
+                   vmin=0.0, vmax=clip)
+    ax.set_xticks(range(len(matrix.columns)),
+                  [f"{int(b)} J" for b in matrix.columns])
+    ax.set_yticks(range(len(matrix)),
+                  [(n[:41] + "...") if len(n) > 41 else n
+                   for n in matrix.index],
+                  fontsize=7)
+    ax.grid(False)
+    bar = fig.colorbar(im, ax=ax, extend="max", fraction=0.03, pad=0.02)
+    bar.set_label("Score per joule (permeability scaled, clipped 97th pct)",
+                  fontsize=8)
+    save(fig, "fig_test_results.png")
 
-    axes[0].set_xlabel("Energy budget (J)")
-    axes[0].set_ylabel("Iterations performed")
-    axes[0].set_title("Search depth against budget")
-    axes[1].set_xlabel("Energy budget (J)")
-    axes[1].set_ylabel("Quality (%)")
-    axes[1].set_title("Quality against budget")
-    axes[1].legend(fontsize=8)
-    save(fig, "fig_convergence.png")
+
+def combined_frame(runs: pd.DataFrame, variants=None) -> pd.DataFrame:
+    """Comparison rows plus the RSS/DE variants, averaged over all budgets.
+
+    The article's Figures 3 and 4 list nine methods: Green ACO, RSS and the
+    seven baselines. ``green_de_results.csv`` also exists but the article
+    reports no DE row, so DE is dropped here to keep the two figures identical
+    to the published ones.
+    """
+    frames = [runs]
+    if variants is not None and not variants.empty:
+        frames.append(variants)
+    data = pd.concat(frames, ignore_index=True)
+    return data[data["method"] != "DE"]
+
+
+def article_method_order(data: pd.DataFrame) -> list:
+    """The method order of article Figure 3: the green methods first, then the
+    ACO baselines by quality, then the GA baselines by quality."""
+    green = [m for m in ("Green ACO", "RSS") if m in set(data["method"])]
+    rest = data[data["method"].isin(set(data["method"]) - set(green))]
+    rest = rest.drop_duplicates("method")
+    families = [("ACO", "ACO"), ("GA", "GA")]
+    ordered = list(green)
+    for want in (f for f, _ in families):
+        block = rest[rest["family"] == want].sort_values("qualite_pct",
+                                                         ascending=False)
+        ordered += block["method"].tolist()
+    return ordered
 
 
 def fig_method_comparison(runs: pd.DataFrame, variants=None) -> None:
-    """Green ACO against the comparison methods, on four green metrics."""
+    """Article Figure 3: solution quality and energy efficiency per method.
+
+    Quality (%) and score-per-Joule share one axis, so the S/J series is
+    plotted in units of 10^-3 %/J: Green ACO's 0.135 %/J reads as 135, against
+    RSS's 120 and the non-green baselines' 15-21, on the same 0-150 axis as
+    their quality percentages.
+    """
     apply_style()
-    metrics = [("qualite_pct", "Quality (%)"),
-               ("score_per_joule", "Quality per Joule (%/J)"),
-               ("energie_joules", "Energy (J)"),
-               ("co2_micrograms", "CO2 footprint (ug CO2eq)")]
+    data = combined_frame(runs, variants)
+    order = article_method_order(data)
+    agg = (data[data["qualite_pct"].notna()]
+           .groupby("method")[["qualite_pct", "score_per_joule"]]
+           .mean().loc[order])
 
-    frames = [runs]
-    if variants is not None and not variants.empty:
-        keep = {"method", "family", "qualite_pct", "energie_joules",
-                "score_per_joule", "co2_micrograms"}
-        frames.append(variants[[c for c in keep if c in variants.columns]])
-    data = pd.concat(frames, ignore_index=True)
-
-    fig, axes = plt.subplots(1, 4, figsize=(19, 4.8))
-    fig.suptitle("Comparison of solution quality and energy efficiency "
-                 "across Green ACO, ACO, RSS and GA variants",
-                 fontsize=13, fontweight="bold")
-
-    for ax, (metric, label) in zip(axes, metrics):
-        agg = (data[data[metric].notna()]
-               .groupby(["method", "family"])[metric].mean().reset_index()
-               .sort_values(metric, ascending=False))
-        colors = [FAMILY_COLORS.get(f, "#888") for f in agg["family"]]
-        bars = ax.barh(agg["method"], agg[metric], color=colors, alpha=0.9)
-        ax.set_xlabel(label, fontsize=9)
-        ax.set_title(label.split("(")[0].strip(), fontsize=10)
-        ax.invert_yaxis()
-        for bar, val in zip(bars, agg[metric]):
-            ax.text(bar.get_width(), bar.get_y() + bar.get_height() / 2,
-                    f" {val:,.4g}", va="center", fontsize=7)
+    y = np.arange(len(agg))
+    width = 0.15
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    ax.bar(y - width / 2, agg["qualite_pct"], width, label="Q (%)",
+            color="#FC6B6C", edgecolor="black")
+    ax.bar(y + width / 2, agg["score_per_joule"] * 1000.0, width,
+            label=r"S/J $\times 10^{-3}$", color="#5C60F4", edgecolor="black")
+    ax.set_xticks(y)
+    ax.set_xticklabels(agg.index, rotation=40, ha="right")
+    ax.set_ylabel("Metric Value")
+    ax.set_ylim(0, 150)
+    ax.yaxis.grid(True, linestyle="--", alpha=0.7)
+    ax.legend(edgecolor="black", framealpha=1)
     save(fig, "fig_method_comparison.png")
+
+
+def fig_co2_methods(runs: pd.DataFrame, variants=None) -> None:
+    """Article Figure 4: CO2 emissions per method.
+
+    Same nine methods as Figure 3, ordered from the cleanest. Emissions are
+    proportional to energy, so this mirrors the energy ranking: Green ACO and
+    RSS sit far below the baselines, which cluster between 0.56e6 and 0.89e6
+    micrograms.
+    """
+    apply_style()
+    data = combined_frame(runs, variants)
+    agg = (data[data["co2_micrograms"].notna()]
+           .groupby(["method", "family"])["co2_micrograms"].mean()
+           .reset_index()
+           .sort_values("co2_micrograms", ascending=True))
+
+    fig, ax = plt.subplots(figsize=(9, 5.5))
+    colors = "#5EAEA9"
+    bars = ax.bar(agg["method"], agg["co2_micrograms"], color=colors, edgecolor="darkslategray", width=0.3)
+    
+    ax.set_ylabel(r"CO$_2$ ($\mu$g)", fontsize=12)
+    ax.set_ylim(0, 1.3e6)
+    ax.set_xticks(range(len(agg)))
+    ax.set_xticklabels(agg["method"], rotation=45, ha="right")
+    ax.yaxis.grid(True, linestyle="--", alpha=0.7)
+    
+    for bar, value in zip(bars, agg["co2_micrograms"]):
+        mantissa, exponent = f"{value:.2e}".split("e")
+        ax.text(bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 15000,
+                rf"${mantissa} \cdot 10^{{{int(exponent)}}}$",
+                ha="center", va="bottom", rotation=90, fontsize=8)
+    save(fig, "fig_co2_methods.png")
 
 
 def table_summary(runs: pd.DataFrame, out: Path, variants=None) -> None:
@@ -356,7 +429,7 @@ def main() -> int:
 
     paths.ensure_dirs()
     apply_style()
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     results = paths.SHIPPED if args.use_shipped else paths.RESULTS
     out = paths.FIGURES
     print(f"  reading from {results}")
@@ -376,13 +449,16 @@ def main() -> int:
 
     summary = read(f"final_summary_{tag}.csv", results, paths.SHIPPED)
     if summary is not None:
-        fig_convergence(summary)
+        fig_test_results(summary)
 
     runs = read(f"comparison_runs_{tag}.csv", results, paths.SHIPPED)
+    if runs is None and tag == "all50":
+        print(f"  [fallback] comparison_runs_all50.csv not found, using core")
+        runs = read("comparison_runs_core.csv", results, paths.SHIPPED)
 
     # Green ACO's own comparison row comes from the 4-instance sweep reported
     # in the article (results/shipped/green_aco_best_params.csv), not from the
-    # full benchmark sweep. The latter would compare a mean over 54 instances
+    # full benchmark sweep. The latter would compare a mean over 50 instances
     # against methods measured on 4. The comparison is a mean over all three
     # energy budgets, which is the basis the article's RSS figures match exactly.
     own = read("green_aco_best_params.csv", results, paths.SHIPPED)
@@ -413,6 +489,7 @@ def main() -> int:
 
     if runs is not None:
         fig_method_comparison(runs, variants)
+        fig_co2_methods(runs, variants)
         table_summary(runs, out, variants)
 
     print("\n  figures complete")

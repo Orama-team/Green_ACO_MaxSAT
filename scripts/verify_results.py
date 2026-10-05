@@ -142,7 +142,7 @@ def main() -> int:
     banner("Verify results")
     rep = Report(args.strict)
     out, shipped = paths.RESULTS, paths.SHIPPED
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     expected = set(select_subset(load_manifest(), args.subset)["benchmark"])
 
     found = 0

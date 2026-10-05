@@ -2,13 +2,9 @@ domain,category,benchmark,file,vars,clauses,best_known,mandatory
 unknown,HaplotypeAssembly-splitedReads_0.matrix,HaplotypeAssembly-splitedReads_0.matrix,HaplotypeAssembly-splitedReads_0.matrix.wcnf.xz,12962,51450,1510.0,False
 unknown,MaxSATQueriesinInterpretableClassifiers-compas_train_5_DNF_5_1,MaxSATQueriesinInterpretableClassifiers-compas_train_5_DNF_5_1,MaxSATQueriesinInterpretableClassifiers-compas_train_5_DNF_5_1.wcnf.xz,21209,129704,2108.0,False
 unknown,MaxSATQueriesinInterpretableClassifiers-toms_test_5_DNF_5_1,MaxSATQueriesinInterpretableClassifiers-toms_test_5_DNF_5_1,MaxSATQueriesinInterpretableClassifiers-toms_test_5_DNF_5_1.wcnf.xz,11902,453184,60.0,False
-unknown,causal-discovery,causal-discovery-causal_n6_i1_N500_uai13_harddeps_int,causal-discovery-causal_n6_i1_N500_uai13_harddeps_int.wcnf.xz,328107,1206162,19.0,False
 unknown,decision-tree,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree.wcnf.xz,5959,110235,143.0,True
 unknown,decision-tree,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree.wcnf.xz,10503,89879,22.0,True
 unknown,decision-tree,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree.wcnf.xz,9973,78069,6.0,True
-unknown,des-cnf.16.p.6,des-cnf.16.p.6,des-cnf.16.p.6.wcnf.xz,99670,450650,16.0,False
-unknown,des-cnf.19.p.10,des-cnf.19.p.10,des-cnf.19.p.10.wcnf.xz,132880,600905,19.0,False
-unknown,fault-diagnosis,fault-diagnosis-s38584_nan_explicit_33_0,fault-diagnosis-s38584_nan_explicit_33_0.wcnf.xz,131581,696606,189.0,False
 crafted,frb-frb40,frb-frb40-19-2.partial,frb-frb40-19-2.partial.wcnf.xz,760,42127,720.0,False
 crafted,frb-frb40,frb-frb40-19-4.partial,frb-frb40-19-4.partial.wcnf.xz,760,42485,720.0,False
 crafted,gen-hyper,gen-hyper-tw-GenHyperTW_b01,gen-hyper-tw-GenHyperTW_b01.wcnf.xz,55117,170612,5.0,False

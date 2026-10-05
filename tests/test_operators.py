@@ -1,10 +1,4 @@
-"""Operators: they never degrade the assignment, and the two backends agree.
-
-The backend-equivalence test is the important one. ``IndexedBackend`` exists
-only as a speed optimisation, so if it ever changed a result the default would
-be silently wrong. Both are exercised under the same seed and required to return
-identical assignments and identical gains.
-"""
+"""Operators: they never degrade the assignment."""
 
 from __future__ import annotations
 
@@ -12,7 +6,7 @@ import random
 
 import pytest
 
-from greenaco.operators import (OPERATOR_FUNCTIONS, IndexedBackend,
+from greenaco.operators import (OPERATOR_FUNCTIONS,
                                 RescanBackend, build_operator_pool,
                                 update_pheromone, update_pheromone_sparse)
 from greenaco.solver import build_eta_matrix, build_greedy_assignment
@@ -20,7 +14,7 @@ from greenaco.wcnf import count_satisfied_clauses
 
 from conftest import make_benchmark
 
-BACKENDS = [RescanBackend, IndexedBackend]
+BACKENDS = [RescanBackend]
 OPERATORS = list(OPERATOR_FUNCTIONS)
 
 
@@ -53,14 +47,6 @@ def _run(backend, bench, operator, seed=11):
 def test_operator_never_degrades(operator, backend_cls, small_benchmark):
     assignment, delta = _run(backend_cls(), small_benchmark, operator)
     assert delta >= 0
-
-
-@pytest.mark.parametrize("operator", OPERATORS)
-def test_backends_agree_exactly(operator, small_benchmark):
-    ref_assignment, ref_delta = _run(RescanBackend(), small_benchmark, operator)
-    idx_assignment, idx_delta = _run(IndexedBackend(), small_benchmark, operator)
-    assert idx_delta == ref_delta
-    assert idx_assignment == ref_assignment
 
 
 @pytest.mark.parametrize("operator", OPERATORS)

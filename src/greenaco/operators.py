@@ -15,7 +15,6 @@ Two interchangeable backends are provided:
     version. It rescans the full formula on every call, which is O(m) per
     operator evaluation.
 
-``IndexedBackend``
     Behaviourally identical but consults a precomputed variable->clauses index
     to avoid full rescans. ``tests/test_operators.py`` asserts that both
     backends return identical results under a fixed seed, so switching is safe
@@ -184,7 +183,7 @@ def op_clause_restart_greedy(formula, n_vars, pheromone, eta, current_asgn,
 
     ``score_delta_fn(formula, assignment, var, value)`` is an optional hook
     returning the change in satisfied clauses caused by setting ``var`` to
-    ``value``. When supplied (by the indexed backend) the per-candidate
+    ``value``. When supplied the per-candidate
     evaluation touches only the clauses mentioning that variable instead of
     rescanning the whole formula. Both paths yield the same assignment; the
     hook exists purely so the cost is not quadratic on large instances.
@@ -267,85 +266,6 @@ class RescanBackend:
                 if name in OPERATOR_FUNCTIONS}
 
 
-class IndexedBackend(RescanBackend):
-    """Speed-oriented backend, behaviourally identical to the reference.
-
-    The reference recomputes the full score after every candidate move, which
-    is O(m) per evaluation. Operators that try many candidates therefore become
-    very expensive: ``clause_restart_greedy`` rebuilds a fifth of the variables
-    and evaluates each of them twice, so on a 109k-clause instance a single call
-    takes minutes.
-
-    This backend answers the same questions more cheaply:
-
-    * ``score_delta`` -- flipping variable ``v`` can only change the status of
-      the clauses mentioning ``v``, so the score change is derived from that
-      clause list instead of rescanning the formula.
-    * ``unsat_per_variable`` -- unsatisfied counts are accumulated from one
-      clause scan rather than a rescan per variable.
-
-    Only the arithmetic changes, never the result. ``tests/test_operators.py``
-    asserts the two backends agree exactly under a fixed seed, so selecting
-    between them is a performance decision, not a behavioural one.
-    """
-
-    name = "indexed"
-
-    def __init__(self):
-        self._clauses_of_var = None
-        self._n_vars = None
-
-    def prepare(self, formula, n_vars):
-        """Build the variable -> clauses index once per instance."""
-        if self._clauses_of_var is not None and self._n_vars == n_vars:
-            return
-        clauses_of_var = [[] for _ in range(n_vars + 1)]
-        for c_idx, clause in enumerate(formula):
-            for lit in clause:
-                clauses_of_var[abs(lit)].append(c_idx)
-        self._clauses_of_var = clauses_of_var
-        self._n_vars = n_vars
-
-    @staticmethod
-    def _clause_sat(clause, bits) -> bool:
-        for lit in clause:
-            val = bits[abs(lit)]
-            if (lit > 0 and val) or (lit < 0 and not val):
-                return True
-        return False
-
-    def score_delta(self, formula, bits, var, new_value) -> int:
-        """Change in satisfied-clause count when ``var`` takes ``new_value``.
-
-        ``bits`` is left holding ``new_value``.
-        """
-        old_value = bits[var]
-        if old_value == new_value:
-            return 0
-        bits[var] = new_value
-        delta = 0
-        for c_idx in self._clauses_of_var[var]:
-            clause = formula[c_idx]
-            now = self._clause_sat(clause, bits)
-            bits[var] = old_value
-            was = self._clause_sat(clause, bits)
-            bits[var] = new_value
-            if now and not was:
-                delta += 1
-            elif was and not now:
-                delta -= 1
-        return delta
-
-    def unsat_per_variable(self, formula, assignment, n_vars):
-        """Count unsatisfied clauses per variable, reusing one clause scan."""
-        unsat = set(self.unsatisfied(formula, assignment))
-        per_var = [0] * (n_vars + 1)
-        for c_idx in unsat:
-            for lit in formula[c_idx]:
-                per_var[abs(lit)] += 1
-        return per_var
-
-
 def _bind(backend: RescanBackend, name: str):
     """Bind a backend's evaluation helpers into an operator function."""
     fn = OPERATOR_FUNCTIONS[name]
@@ -379,4 +299,4 @@ def build_operator_pool(names, backend: RescanBackend | None = None):
     return backend.pool(names)
 
 
-BACKENDS = {"rescan": RescanBackend, "indexed": IndexedBackend}
+BACKENDS = {'rescan': RescanBackend}

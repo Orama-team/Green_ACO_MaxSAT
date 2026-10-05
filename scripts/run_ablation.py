@@ -73,7 +73,7 @@ def main() -> int:
 
     banner("Ablation study")
     out = results_dir(args.out_dir)
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     budgets = selected_budgets(args.budgets)
 
     bench = load_benchmark(args.subset)

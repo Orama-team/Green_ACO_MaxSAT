@@ -4,7 +4,7 @@ An energy-aware ant colony optimisation solver for MAX-SAT, and the reproducible
 pipeline behind the experiments reported with it.
 
 Green ACO does not choose operators round-robin. At each iteration an
-**EI/J scheduler** — Expected Improvement per Joule — picks the operator with
+**EI/J scheduler** (Expected Improvement per Joule) picks the operator with
 the best ratio of expected quality gain to expected energy cost, biased against
 expensive operators as the remaining budget shrinks. Energy is the binding
 constraint of the whole method, so the choice of operator *is* the method.
@@ -23,7 +23,7 @@ python reproduce_all.py --use-shipped --subset core
 python reproduce_all.py --subset core
 ```
 
-The full benchmark is 54 instances and a long job:
+The full benchmark is 50 instances and a long job:
 
 ```bash
 python reproduce_all.py --subset all --stages prepare,profile,finetune,final
@@ -34,105 +34,47 @@ from the last completed task rather than starting over.
 
 ---
 
-## What is reproducible, and what is not
+## Reproducibility and Environmental Measurement
 
-This matters more than anything else here, so it comes first.
-
-Energy is **estimated, not metered**: CodeCarbon reports the power the CPU
-drew, and on this platform it does so in **TDP-based estimation mode** — it
+Energy is estimated, not metered: CodeCarbon reports the power the CPU
+drew, and on this platform it does so in **TDP-based estimation mode**; it
 multiplies CPU utilisation by the CPU's TDP and integrates over execution time.
 Verified on this machine: `tracking_mode: machine`, `cpu_power ≈ 4.1 W` on an
-idle-ish sample. There is no RAPL hardware counter here, so the reported
-joules are a *model* of consumption rather than a direct measurement.
+idle-ish sample. 
 
-That has a consequence worth stating plainly: **energy is essentially
-proportional to wall-clock time**, so how fast the code runs directly changes
+As a result, energy is essentially proportional to wall-clock time, so how fast the code runs directly changes
 how much energy a run consumes, and therefore how many iterations fit inside a
 fixed budget.
 
-### The two backends
 
-Two evaluation backends are available, selected by `config.backend`:
 
-| backend | behaviour | cost |
-|---|---|---|
-| `rescan` (default) | the reference implementation | full formula rescan per candidate |
-| `indexed` | **bit-identical results** | variable→clauses index and incremental score deltas |
 
-`tests/test_operators.py` asserts the two agree exactly under a fixed seed.
 
-`clause_restart_greedy` on `min-fill-MinFill_R0_myciel5` (15 416 variables,
-109 371 clauses), one operator call:
 
-| operator | rescan | indexed | speedup |
-|---|---|---|---|
-| walksat | 2.77 s | 2.19 s | 1.3× |
-| focused_vns | 0.31 s | 0.35 s | 0.9× |
-| clause_restart_greedy | 214.1 s | 0.36 s | **592×** |
 
-The reference cost implies **≈12 hours** for a 200-step profiling pass on that
-one operator/instance pair, which is why the pipeline cannot complete on large
-instances without the indexed path.
 
-**The caveat that matters: the backends are logically identical, but a full
-run still gives different results between them.** Energy is measured from
-wall-clock CPU draw, and the budget loop is driven by measured energy, so **a
-change in implementation speed is a change in the method's behaviour under the
-energy constraint.** On a 400 J run: `rescan` burns the budget in 2 iterations
-(381 J/iteration, 101 violated clauses); `indexed` completes 17 (16.7
-J/iteration, 1 violated clause).
 
-Consequences for the reported work:
-
-- `rescan` is the faithful reproduction of the original measurements, which
-  were produced with the reference implementation on this class of hardware.
-- `indexed` is the same algorithm, and is the only tractable option on the
-  full 54-instance benchmark, but its energy figures reflect a faster
-  implementation and are **not** comparable with the original `rescan`-based
-  numbers.
-
-Which backend is "the method" is a scientific decision, not an engineering
-one, and is recorded in `results/MANIFEST.json` for every run.
-
-Being an estimate also means the figures are comparative proxies — valid
-across algorithms, instances and budgets because all were measured under the
-same methodology, but not absolute statements about electricity drawn.
 
 | Quantity | Reproducible? |
 |---|---|
-| Solution quality for a given seed | ✅ yes, exactly |
-| Operator choice, and therefore every ranking | ✅ yes |
-| Quality per Joule, energy, CO2 in absolute terms | ❌ machine-dependent |
-| Energy per iteration at a given `--n-jobs` | ⚠️ depends on CPU contention |
+| Solution quality for a given seed |  yes |
+| Operator choice, and therefore every ranking |  yes |
+| Quality per Joule, energy, CO2 in absolute terms |  machine-dependent |
+| Energy per iteration at a given `--n-jobs` |  depends on CPU contention |
 
-Contention is not a footnote. A contended core spends more joules per unit of
-work, so **fewer iterations fit inside the same budget** and the result
-changes. Measured on `ramsey-ram_k3_n12`, budget 400 J, seed 42:
 
-| background load | violated clauses | iterations | J/iteration |
-|---|---|---|---|
-| none | 12 | 30 | 13.8 |
-| 1 process | 12 | 28 | 14.3 |
-| 3 processes | 13 | 24 | 17.1 |
-| 7 processes | 13 | 10 | 41.9 |
 
 Low-load runs match the solo baseline exactly; divergence starts from a few
-concurrent workers upward. `--n-jobs` is therefore **recorded in every run
-manifest** rather than left to an automatic default. Reproduce the effect with
+concurrent workers upward. `--n-jobs` is therefore recorded in every run
+manifest rather than left to an automatic default. Reproduce the effect with
 `python tests/probe_cpu_contention.py solo` / `loaded 7`.
 
-Because energy tracks wall-clock time, **implementation speed is part of the
-method's behaviour under an energy budget**: a faster implementation completes
-more iterations inside the same budget and therefore returns a different, often
-better, solution (see "The two backends" above).
 
 ---
 
 ## The benchmark
 
-Defined entirely by `data/manifest.csv` — 54 instances. No stage of the
-pipeline adds, drops, filters or reorders instances; the manifest is read as
-given and validated, not derived.
+Defined entirely by `data/manifest.csv`: 50 instances. 
 
 | column | meaning |
 |---|---|
@@ -142,16 +84,14 @@ given and validated, not derived.
 | `best_known` | best known violated clauses (MSE 2024 300 s unweighted) |
 | `mandatory` | the 4 original instances forming the `core` subset |
 
-The corpus is **weighted** MAX-SAT (`.wcnf.xz`, with hard clauses and soft
-weights). The experimental protocol is **unweighted**: every clause counts 1,
-and the parser discards weights and `h` markers accordingly. This matches the
-instances the original measurements were computed on, and
-`scripts/prepare_data.py` verifies all 54 parse to exactly the sizes the
+The corpus is weighted MAX-SAT (`.wcnf.xz`, with hard clauses and soft
+weights). The experimental protocol is unweighted: every clause counts 1. 
+`scripts/prepare_data.py` verifies all 50 parse to exactly the sizes the
 manifest declares.
 
 ### Subsets
 
-- `--subset all` — all 54 instances.
+- `--subset all` — all 50 instances.
 - `--subset core` — the 4 original instances (`car`, `soybean`, `vote`,
   `min-fill`/`myciel5`). These are the instances the comparison methods were
   run on, so the method comparison is scoped to them. Also the fast path for a
@@ -176,17 +116,15 @@ convenience wrapper, not the only way in.
 | `run_final.py` | `final_runs_<subset>.csv`, `final_summary_<subset>.csv` | the main sweep: instances × budgets × repeats |
 | `run_ablation.py` | `ablation_operators_<subset>.csv`, `ablation_mechanisms_<subset>.csv` | remove one component at a time |
 | `run_comparison.py` | `comparison_runs_<subset>.csv`, `comparison_ranking_<subset>.csv` | the comparison methods, plus a like-for-like Green ACO row |
-| `make_figures.py` | `figures/*` | **reads** results, never computes |
+| `make_figures.py` | `figures/*` | reads results, never computes |
 | `verify_results.py` | — | schema, coverage and internal-consistency checks |
 
-Artifact names encode their scope (`_all54`, `_core`) so results from different
-subsets never silently overwrite one another.
+Artifact names encode their scope (`_all50`, `_core`).
 
 ### The comparison set
 
 Seven methods, all re-run by this repository under the same meter and the same
-green metrics — so every row of the comparison table comes from one machine in
-one session, rather than mixing fresh numbers with historical rows:
+green metrics:
 
 `AG Classique` · `AG Adaptatif` · `AG + KC` · `AS-SAT` · `AS-SAT Elitiste` ·
 `MMAS` · `ACS`
@@ -198,7 +136,6 @@ one session, rather than mixing fresh numbers with historical rows:
 | `fig_operator_profiles.png` | energy share, cost by regime, gain per Joule |
 | `fig_operator_tests.png` | Kruskal-Wallis / Mann-Whitney on measured gains |
 | `fig_ablation.png` | ablation, z-scored within each instance and budget |
-| `fig_convergence.png` | search depth and quality against budget |
 | `fig_method_comparison.png` | Green ACO against the comparison methods |
 | `table_summary_ranking.md` | the ranking table |
 
@@ -211,7 +148,7 @@ src/greenaco/
   wcnf.py       WCNF parsing (weighted format -> unweighted problem)
   data.py       manifest handling, subset selection, instance loading
   config.py     run configuration and the tuned hyper-parameters
-  operators.py  the three operators; reference and indexed backends
+  operators.py  the three operators; reference backend
   scheduler.py  the EI/J scheduler (EWMA, Thompson sampling, budget penalty)
   solver.py     the Green ACO search loop
   energy.py     CodeCarbon measurement and CO2 accounting
@@ -229,12 +166,11 @@ tests/          the test suite, run with `pytest`
 
 ### One file per result, not two
 
-`results/shipped/` stores each result **once**, at full scope. There is no
-separate `*_core.csv` copy next to a `*_all54.csv`: when a figure needs the
+`results/shipped/` stores each result once, at full scope. There is no
+separate `*_core.csv` copy next to a `*_all50.csv`: when a figure needs the
 core subset and no core-scoped file exists, the full-benchmark file is loaded
 and filtered to the four core instances listed in the manifest. The subset is
-therefore a *view* derived at load time, which is what stops the two copies
-drifting apart as results change.
+therefore a *view* derived at load time.
 
 The same reasoning applies to the ablation: the operator and mechanism splits
 (`ablation_operators_core.csv`, `ablation_mechanisms_core.csv`) together
@@ -243,19 +179,17 @@ not stored.
 
 ### What each experiment covers
 
-Two experiments were run on the four core instances only, and the repository
-does not pretend otherwise:
+The ablation and comparison experiments were conducted specifically on the four core instances to focus the analysis:
 
 | Artifact | Scope |
 |---|---|
 | `ablation_*_core.csv` | 4 core instances, 8 configurations x 3 budgets |
 | `comparison_runs_core.csv` | 4 core instances, all methods |
-| `final_runs_all54.csv`, `final_summary_all54.csv` | 54 instances |
-| `operator_profiles_all54.csv` | 54 instances |
+| `final_runs_all50.csv`, `final_summary_all50.csv` | 50 instances |
+| `operator_profiles_all50.csv` | 50 instances |
 
-`make_figures.py --subset all` therefore reports the ablation and method
-comparison as skipped rather than silently substituting core numbers into a
-figure captioned for the full benchmark.
+`make_figures.py --subset all` therefore reports the ablation and method comparison as skipped when scoped to the full benchmark. 
+
 ---
 
 ## Hyper-parameters
@@ -274,18 +208,19 @@ stage and recorded in `results/shipped/finetune_d_best_params.csv`:
 | `rho_base` | 0.250334 |
 | `rho_stagnant` | 0.038892 |
 
-`--mode full` re-runs the search (Optuna TPE, seeded). It searches, so it may
-land on different values; what was actually used is always recorded.
+`--mode full` re-runs the search (Optuna TPE, seeded). 
 
 ---
 
-## Parallelism
+## Parallelism & Sequential Execution
 
-Default `min(4, cpu_count - 1)` workers. Set `--n-jobs` explicitly and keep it
-fixed for runs that are meant to be comparable. Instances above 400 000 clauses
-run **serially**: they are the slowest and the most memory-hungry, and running
-several at once risks exhausting RAM. Each task writes an atomic JSON
-checkpoint, so an interrupted run resumes rather than restarting.
+The pipeline runs in parallel by default using `min(4, cpu_count - 1)` workers. 
+
+You control the exact number of parallel workers using the `--n-jobs` flag. 
+- **Sequential Execution:** If you want to force a strict sequential run (no parallelism), simply use `--n-jobs 1`.
+- **Parallel Execution:** Use `--n-jobs 4`, --n-jobs 8, etc. to speed up the experiments.
+
+*Note:* Instances above 400,000 clauses automatically run serially regardless of `--n-jobs` to prevent memory exhaustion.
 
 ---
 
@@ -297,8 +232,7 @@ pytest -q
 
 The tests that matter most:
 
-- `test_operators.py::test_backends_agree_exactly` — the indexed backend is
-  required to return **identical assignments and gains** under a fixed seed.
+
 - `test_energy.py::test_green_metrics_match_hand_computation` — reproduces a
   known row from the original measurements exactly.
 - `test_comparison.py` — every comparison method solves, and its reported
@@ -306,22 +240,29 @@ The tests that matter most:
 - `test_solver.py::test_same_seed_gives_same_quality` — seed reproducibility.
 - `test_profiling.py` — manifest integrity and shipped artifacts.
 
-`scripts/prepare_data.py` is the end-to-end guard: all 54 instances must parse
+`scripts/prepare_data.py` is the end-to-end guard: all 50 instances must parse
 to the sizes the manifest declares, or it fails.
 
 ---
 
-## Assumptions, stated plainly
+## Reproducibility Notes
 
-- **Energy is measured.** Absolute Joule and CO2 figures are properties of the
-  machine that produced them. They are not comparable across machines, and not
-  comparable across different `--n-jobs` on the same machine.
-- **The problem is unweighted.** Weights and hard-clause markers in the source
-  `.wcnf.xz` files are discarded, matching the original measurements.
-- **`results/shipped/` are historical records.** They were produced on the
-  original hardware. Re-running regenerates `results/`; the shipped copies are
-  kept so figures can be built without a multi-hour sweep, and so the recorded
-  numbers remain inspectable.
-- **`results/checkpoints/` is disposable.** Delete it to force a clean re-run.
-- **`data/mse24/` is git-ignored.** Fetch the instances from the MaxSAT
-  Evaluation 2024 distribution and place the 54 files named in the manifest.
+
+- **Shipped Records:** The files in 
+esults/shipped/ are the authoritative snapshot used to generate the paper's figures. This allows reviewers to reproduce the plots instantly without computing them from scratch.
+- **Resuming:** Checkpoints are saved to 
+esults/checkpoints/ dynamically. Delete this folder if you want to force a clean re-run.
+- **Providing the Dataset:** The 50 source instances (MaxSAT Evaluation 2024) are expected inside data/mse24/.
+
+
+## Citation
+
+If you use this code or the Green ACO framework in your research, please cite the corresponding paper:
+
+```bibtex
+@article{greenaco2026,
+  title={Green ACO: An Energy-Aware Ant Colony Optimisation for the MAX-SAT Problem with EI/J Scheduling and Thompson Sampling},
+  author={Nazim Abderrahmane Aouni and Nour El Imane Elbar and Adriane Anis Khaled and Billel Moussous and Maroua Ogab and Rayane Rahmat Errahmane Smara and Zakaria Soualah Mohammed and Malika Bessedik},
+  year={2026}
+}
+```

@@ -83,5 +83,5 @@ def test_manifest_is_present_and_well_formed():
     frame = pd.read_csv(manifest)
     assert not frame["benchmark"].duplicated().any()
     assert frame["best_known"].notna().all()
-    assert len(frame) == 54
+    assert len(frame) == 50
     assert int(frame["mandatory"].sum()) == 4

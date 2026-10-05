@@ -71,7 +71,7 @@ def main() -> int:
     banner("Final sweep")
     out = results_dir(args.out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     budgets = selected_budgets(args.budgets)
 
     bench = load_benchmark(args.subset)

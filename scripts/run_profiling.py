@@ -85,7 +85,7 @@ def main() -> int:
     df = df[PROFILE_COLUMNS + [c for c in df.columns if c not in PROFILE_COLUMNS]]
 
     out = results_dir(args.out_dir)
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     write_csv(df, out, f"operator_profiles_{tag}.csv")
 
     print("\n  Mean cost per operator (Joules):")

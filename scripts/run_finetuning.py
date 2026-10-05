@@ -60,7 +60,7 @@ def main() -> int:
 
     banner(f"Hyper-parameters ({args.mode})")
     out = results_dir(args.out_dir)
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
     bench = load_benchmark(args.subset)
     budgets = selected_budgets(args.budgets)
 

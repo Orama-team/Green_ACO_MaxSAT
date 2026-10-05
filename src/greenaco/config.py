@@ -115,10 +115,7 @@ class GreenACOConfig:
     # Target quality as a fraction of clauses (1.0 == solve completely).
     target_quality: float = 1.0
 
-    # Evaluation backend. "rescan" is the reference implementation and the
-    # default; "indexed" is bit-identical but avoids repeated full rescans,
-    # which matters enormously for clause_restart_greedy (measured ~590x faster
-    # on a 109k-clause instance). tests/test_operators.py asserts the two agree.
+    # Evaluation backend. "rescan" is the reference implementation and the default.
     backend: str = "rescan"
 
     # Mechanism switches, all toggled by the ablation axis B.

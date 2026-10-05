@@ -53,7 +53,7 @@ def main() -> int:
 
     banner("Method comparison")
     out = results_dir(args.out_dir)
-    tag = "all54" if args.subset == "all" else args.subset
+    tag = "all50" if args.subset == "all" else args.subset
 
     bench = load_benchmark(args.subset)
     print(f"  subset {args.subset}: {len(bench)} instances x "

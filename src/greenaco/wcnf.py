@@ -138,8 +138,7 @@ def parse_wcnf(path, name: str | None = None) -> Instance:
     return Instance(benchmark=name, n_vars=max_var, clauses=clauses)
 # ── Shared evaluation helpers ────────────────────────────────────────────────
 # These mirror the original notebook implementations exactly. They rescan the
-# full formula on every call; ``operators.IndexedBackend`` provides an
-# equivalent-but-faster variant, verified against these by the test suite.
+# full formula on every call.
 
 
 def count_satisfied_clauses(formula, assignment) -> int:

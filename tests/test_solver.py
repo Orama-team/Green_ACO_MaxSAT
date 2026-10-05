@@ -58,12 +58,6 @@ def test_quality_never_below_random_start(tiny_benchmark):
     assert stats["qualite_solution"] >= count_satisfied_clauses(formula, start)
 
 
-@pytest.mark.parametrize("backend", ["rescan", "indexed"])
-def test_backends_are_interchangeable(tiny_benchmark, backend):
-    stats = _solve(tiny_benchmark, budget_j=200.0, backend=backend)
-    assert stats["backend"] == backend
-    assert stats["qualite_solution"] > 0
-
 
 def test_profiles_are_accepted_without_error(tiny_benchmark):
     profiles = {
