@@ -1,281 +1,244 @@
 # Green ACO for MAX-SAT
 
-Implementation of **Green ACO**, an energy-aware Ant Colony Optimisation
-solver for MAX-SAT, developed for TP5 ("Green ACO pour MAX-SAT",
-équipe **Orama**). This repository contains the actual solver
-(`method/`) that the analysis notebook `TP5_presentation_finale.ipynb`
-(included under `examples/`) profiles, ablates, tunes, and compares
-against the TP4 baselines (GA / ACO variants).
+An energy-aware ant colony optimisation solver for MAX-SAT, and the reproducible
+pipeline behind the experiments reported with it.
 
-It also adds a `budget_predictor/` component: an XGBoost model that
-recommends the energy budget to allocate to a new, unseen MAX-SAT
-instance, based on cheap structural features — replacing the manual
-`[400, 1000, 2000] J` sweep used throughout the notebook with a
-per-instance prediction.
+Green ACO does not choose operators round-robin. At each iteration an
+**EI/J scheduler** — Expected Improvement per Joule — picks the operator with
+the best ratio of expected quality gain to expected energy cost, biased against
+expensive operators as the remaining budget shrinks. Energy is the binding
+constraint of the whole method, so the choice of operator *is* the method.
 
 ---
-
-## 1. Method
-
-### 1.1 Reminder — ACO for MAX-SAT
-
-Ant Colony Optimisation maintains a **pheromone matrix** `tau` where
-`tau[v][b]` encodes the desirability of assigning boolean value `b` to
-variable `v`. At every iteration, an operator modifies the current
-assignment and the pheromone is updated to reinforce good assignments.
-(`method/pheromone.py`)
-
-### 1.2 Green ACO
-
-Green ACO's central idea is to **dynamically select the operator that
-maximizes the quality gain per Joule consumed**.
-
-#### 1.2.1 The EI/J scheduler (Expected Improvement per Joule)
-
-Implemented in `method/selection.py` (`EIJScheduler`). The scheduler
-learns which operator is most efficient:
-
-```
-EI/J(o) = E[Δf(o)] / E[E(o)]
-```
-
-Statistics are maintained with an **EWMA** (Exponentially Weighted
-Moving Average, smoothing factor `alpha_ewma`):
-
-```
-mu_Δf  <- alpha * mu_Δf  + (1 - alpha) * Δf_t
-mu_lnE <- alpha * mu_lnE + (1 - alpha) * ln(E_t)
-```
-
-**Thompson Sampling** injects controlled exploration — instead of using
-the mean directly, we sample from the learned distribution:
-
-```
-Δf~ ~ N(mu_Δf, sigma²_Δf)          E~ ~ LogNormal(mu_lnE, sigma²_lnE)
-```
-
-A **budget penalty** discourages expensive operators when the
-remaining budget is low:
-
-```
-pi(o, B) = B / (B + E[E~(o)])
-```
-
-Final selection score:
-
-```
-Phi(o) = (Δf~ / E~) * pi(o, B)     =>     o* = argmax_o Phi(o)
-```
-
-#### 1.2.2 Other improvements (all implemented in `method/`)
-
-| Improvement | Where | Description |
-|---|---|---|
-| Dual-regime profiling | `method/benchmark.py::run_profiling` | Every operator is profiled before any run, on `easy` (q0=0.5) and `hard` (q0=0.95) regimes |
-| Sparse pheromone update | `method/pheromone.py`, `config.use_sparse_update` | O(k) update over the variables touched by the last move, instead of O(n) |
-| Pheromone caching / warm-start | `method/pheromone.py::save/load`, `config.use_pheromone_cache` | Reuse tau learned on budget B1 to warm-start budget B2 |
-| Adaptive evaporation | `method/solver.py` | `rho_base` in normal regime, `rho_stagnant` during stagnation |
-| Frugal skip | `method/pheromone.py::update` | Skip reinforcement of moves that barely progress (`stagnation_epsilon`) |
-| Anti-overrun guard | `method/solver.py` | Vetoes an operator call whose estimated cost exceeds `max_overrun_factor * remaining_budget` |
-| Early stopping | `method/solver.py` | `stagnation_window`, `best_stagnation_limit`, `plateau_tolerance_pct` |
-
-### 1.3 Operator pool (`method/operators.py`)
-
-| Operator | Mechanism |
-|---|---|
-| **WalkSAT** | Targets unsatisfied clauses: greedy flip (max satisfied clauses) or random flip with probability `p_noise` |
-| **Focused VNS** | Ranks variables by (# unsatisfied clauses involved) × (pheromone signal), flips the top-`k` most problematic |
-| **Clause Restart Greedy** | Guided partial reconstruction: greedily reassigns the variables most involved in unsatisfied clauses |
-
-### 1.4 Statistical testing (`method/metrics.py`)
-
-Kruskal-Wallis, pairwise Mann-Whitney U, and Wilcoxon signed-rank tests
-on the Δf produced by each operator during profiling — reproducing the
-notebook's "Tests Statistiques" section exactly.
-
----
-
-## 2. Experiments
-
-### 2.1 Benchmark instances
-
-The 4 instances used throughout the notebook and this repository's
-examples (not redistributed here — bring your own `.cnf` files with
-matching names):
-
-| # | Alias | Full name | Vars | Clauses | Best known |
-|---|---|---|---|---|---|
-| 1 | soybean | `decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree` | 10 503 | 89 879 | 22 |
-| 2 | min-fill | `min-fill-MinFill_R0_myciel5` | 15 416 | 109 371 | 196 |
-| 3 | car | `decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree` | 5 959 | 110 235 | 143 |
-| 4 | vote | `decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree` | 9 973 | 78 069 | 6 |
-
-### 2.2 Hyperparameter tuning (`method/benchmark.py::run_optuna_search`)
-
-Optuna (TPE sampler, 50 trials by default), maximizing the
-quality/joule ratio, over the search space in `method/config.py`:
-
-| Hyperparameter | Range | Role |
-|---|---|---|
-| `alpha_ewma` | [0.5, 0.99] | EWMA smoothing factor of the scheduler |
-| `max_overrun_factor` | [1.0, 3.0] | Per-operator budget-overrun tolerance |
-| `stagnation_window` | [5, 20] | Stagnation detection window |
-| `stagnation_epsilon` | [0.1, 2.0] | Stagnation threshold (mean Δf) |
-| `best_stagnation_limit` | [5, 30] | Max iterations without improving the incumbent |
-| `plateau_tolerance_pct` | [0.001, 0.02] | Early-stop tolerance |
-| `rho_base` | [0.01, 0.3] | Pheromone evaporation (normal regime) |
-| `rho_stagnant` | [0.005, 0.1] | Pheromone evaporation (stagnation regime) |
-
-If `optuna_results.csv` is unavailable, `method/config.py` falls back
-to the empirical TP5 defaults (`alpha_ewma=0.9`, `max_overrun_factor=1.8`,
-`stagnation_window=10`, `stagnation_epsilon=0.5`,
-`best_stagnation_limit=15`, `plateau_tolerance_pct=0.005`,
-`rho_base=0.1`, `rho_stagnant=0.02`).
-
-### 2.3 Profiling
-
-`method/benchmark.py::run_profiling` measures, per operator, per
-instance, per regime (`n_runs=10` by default): mean energy cost (J)
-and mean quality gain (Δf) — written to `operator_profiles.csv`.
-
-### 2.4 Ablation study
-
-`method/benchmark.py::run_ablation` evaluates every component of Green
-ACO by toggling it off, across budgets `[400, 1000, 2000]` J:
-
-| Configuration | WalkSAT | FocusedVNS | ClauseRestart | Caching | Profiling | Sparse update | Overrun fix |
-|---|---|---|---|---|---|---|---|
-| **full_v4** | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| no_walksat | — | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| no_focused_vns | ✓ | — | ✓ | ✓ | ✓ | ✓ | ✓ |
-| no_greedy_restart | ✓ | ✓ | — | ✓ | ✓ | ✓ | ✓ |
-| no_caching | ✓ | ✓ | ✓ | — | ✓ | ✓ | ✓ |
-| no_profiling | ✓ | ✓ | ✓ | ✓ | — | ✓ | ✓ |
-| no_sparse_ph | ✓ | ✓ | ✓ | ✓ | ✓ | — | ✓ |
-| no_overrun_fix | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
-
-Results are written to `ablation_results.csv`, consumed directly by the
-notebook's z-score visualization cell.
-
----
-
-## 3. Baselines (TP4)
-
-The GA (Classic / Adaptive / Knowledge-Compilation) and ACO
-(AS-SAT / AS-SAT Élitiste / MMAS / ACS) baselines compared against in
-the notebook (section 3) come from a separate TP4 codebase and are
-**out of scope** for this repository — the notebook only *reads*
-`green_metrics_aco_methods.csv` / `green_metrics_ga_methods.csv` to
-plot the comparison.
-
----
-
-## 4. Results & interpretation
-
-`method/benchmark.py::run_best_params` runs Green ACO v4 with the
-best/default hyperparameters and writes `best_params_results.csv`,
-which feeds the notebook's comparison bar charts (4.1), convergence
-curves (4.2), and final ranking table (5.1).
-
-Key conclusions from the ablation study, reproduced by design in this
-implementation:
-
-- **`clause_restart_greedy` is the riskiest component without a
-  guard.** It produces large quality jumps (+1000 to +3700 Δf per
-  call) but at high cost (800–3600 J). Without `max_overrun_factor`,
-  a single call can massively overrun the budget — this is exactly
-  what `solver.py`'s anti-overrun veto prevents.
-- **The EI/J scheduler earns its cost on constrained budgets** (400 J),
-  where operator cost profiles are most heterogeneous.
-- **Removing WalkSAT** hurts most on instances with very few
-  unsatisfied clauses near the optimum (e.g. `vote`, best known = 6),
-  exactly WalkSAT's regime of surgical clause-targeting.
-- **Frugal skip + adaptive evaporation** save 17–27% of pheromone
-  updates during stagnation without measurable quality loss.
-
----
-
-## 5. Budget predictor (`budget_predictor/`)
-
-A complementary XGBoost regressor that predicts the energy budget
-(Joules) an unseen instance needs to reach a target quality, from
-structural features alone (variable/clause counts, clause-length and
-variable-degree distributions, Horn-clause fraction, etc. — see
-`budget_predictor/feature_extractor.py`), trained on the
-benchmark pickle `Bechmarks/final_merged_100_per_benchmark_3cat.pck`.
-The workflow is split into two phases: first export a tabular CSV from
-the pickle, then train on that CSV. The export step derives the target
-budget by running Green ACO on each instance at the standard budget
-grid and selecting the smallest budget that reaches the requested
-quality threshold.
-
-```bash
-# phase 1: export the tabular dataset from the pickle
-python examples/build_budget_tabular_dataset.py \
-  --pck-path Bechmarks/final_merged_100_per_benchmark_3cat.pck \
-  --out-csv models/budget_tabular_dataset.csv \
-  --limit 200 \
-  --flush-every 100
-
-# --limit samples across categories/benchmarks by default;
-# use --limit-strategy contiguous for the old first-N-records behavior.
-# Completed rows are appended to the CSV every --flush-every instances,
-# so Ctrl+C leaves a usable partial dataset on disk.
-# Re-running the command resumes from existing rows by default; pass
-# --no-resume if you want to overwrite the CSV.
-
-# phase 2: train the model from the exported CSV (default test split: 20%)
-python -m budget_predictor.trainer \
-  --dataset-csv models/budget_tabular_dataset.csv \
-  --model-dir models
-
-# optional: train + predict a new CNF instance in one step
-python examples/train_and_predict_budget.py \
-  models/budget_tabular_dataset.csv \
-  path/to/new_instance.cnf
-
-# predict a budget for a new instance
-python -m budget_predictor.inference --cnf path/to/new_instance.cnf --snap-to-tested
-```
-
-With only 4 profiled instances (as in the notebook), this model is a
-proof of concept — accuracy improves as more instances are profiled
-and added to the training set.
-
----
-
-## Repository structure
-
-```
-method/
-  solver.py       # main Green ACO loop (GreenACOSolver)
-  operators.py    # WalkSAT, Focused VNS, Clause Restart Greedy
-  selection.py    # EI/J scheduler (EWMA + Thompson sampling + budget penalty)
-  energy.py       # Joule accounting + CO2 footprint
-  pheromone.py    # tau matrix, evaporation, sparse update, warm-start cache
-  parallel.py     # multi-process helpers for profiling/ablation/Optuna
-  metrics.py      # Kruskal-Wallis / Mann-Whitney / Wilcoxon, ranking table
-  benchmark.py    # profiling, ablation, best-params, Optuna harnesses
-  parser.py       # DIMACS CNF parser
-  utils.py        # assignment helpers
-  config.py       # hyperparameters, ablation configs, search space
-budget_predictor/
-  cnf_parser.py, feature_extractor.py, preprocessing.py, dataset.py,
-  trainer.py, predictor.py, model.py, inference.py
-models/           # trained XGBoost model artifacts (generated)
-examples/         # runnable end-to-end scripts + the original notebook
-README.md
-requirements.txt
-```
-
-## Installation
-
-```bash
-pip install -r requirements.txt
-```
 
 ## Quick start
 
 ```bash
-python examples/run_single_instance.py path/to/instance.cnf --budget 1000
+pip install -r requirements.txt
+
+# Build every figure from the results shipped with the repository (seconds)
+python reproduce_all.py --use-shipped --subset core
+
+# Reproduce the experiments, then the figures
+python reproduce_all.py --subset core
 ```
+
+The full benchmark is 54 instances and a long job:
+
+```bash
+python reproduce_all.py --subset all --stages prepare,profile,finetune,final
+```
+
+Every run is **resumable**: interrupt it and start it again, and it continues
+from the last completed task rather than starting over.
+
+---
+
+## What is reproducible, and what is not
+
+This matters more than anything else here, so it comes first.
+
+Energy is **measured**, not modelled: a CodeCarbon tracker reports the power
+the CPU actually drew. A measurement is a property of a machine, so:
+
+| Quantity | Reproducible? |
+|---|---|
+| Solution quality for a given seed | ✅ yes, exactly |
+| Operator choice, and therefore every ranking | ✅ yes |
+| Quality per Joule, energy, CO2 in absolute terms | ❌ machine-dependent |
+| Energy per iteration at a given `--n-jobs` | ⚠️ depends on CPU contention |
+
+Contention is not a footnote. A contended core spends more joules per unit of
+work, so **fewer iterations fit inside the same budget** and the result
+changes. Measured on `ramsey-ram_k3_n12`, budget 400 J, seed 42:
+
+| background load | violated clauses | iterations | J/iteration |
+|---|---|---|---|
+| none | 12 | 30 | 13.8 |
+| 1 process | 12 | 28 | 14.3 |
+| 3 processes | 13 | 24 | 17.1 |
+| 7 processes | 13 | 10 | 41.9 |
+
+Low-load runs match the solo baseline exactly; divergence starts from a few
+concurrent workers upward. `--n-jobs` is therefore **recorded in every run
+manifest** rather than left to an automatic default. Reproduce the effect with
+`python tests/probe_cpu_contention.py solo` / `loaded 7`.
+
+A related consequence, specific to this method: **implementation speed is part
+of the method's behaviour under an energy budget.** See `docs/BACKENDS.md`.
+
+---
+
+## The benchmark
+
+Defined entirely by `data/manifest.csv` — 54 instances. No stage of the
+pipeline adds, drops, filters or reorders instances; the manifest is read as
+given and validated, not derived.
+
+| column | meaning |
+|---|---|
+| `benchmark` | instance name; the join key in every result file |
+| `file` | filename under `data/mse24/` |
+| `vars`, `clauses` | parsed sizes, cross-checked at load time |
+| `best_known` | best known violated clauses (MSE 2024 300 s unweighted) |
+| `mandatory` | the 4 original instances forming the `core` subset |
+
+The corpus is **weighted** MAX-SAT (`.wcnf.xz`, with hard clauses and soft
+weights). The experimental protocol is **unweighted**: every clause counts 1,
+and the parser discards weights and `h` markers accordingly. This matches the
+instances the original measurements were computed on, and
+`scripts/prepare_data.py` verifies all 54 parse to exactly the sizes the
+manifest declares.
+
+### Subsets
+
+- `--subset all` — all 54 instances.
+- `--subset core` — the 4 original instances (`car`, `soybean`, `vote`,
+  `min-fill`/`myciel5`). These are the instances the comparison methods were
+  run on, so the method comparison is scoped to them. Also the fast path for a
+  first run.
+---
+
+## Pipeline
+
+```
+prepare -> profile -> finetune -> final -> ablation -> comparison
+        -> figures -> verify
+```
+
+Each stage is its own script and runs standalone; `reproduce_all.py` is a
+convenience wrapper, not the only way in.
+
+| script | writes | purpose |
+|---|---|---|
+| `prepare_data.py` | — | validate the manifest and every instance file |
+| `run_profiling.py` | `operator_profiles_<subset>.csv` | measure each operator in isolation, per regime |
+| `run_finetuning.py` | `finetune_d_best_params_<subset>.csv` | reuse (`--mode frozen`) or re-derive (`--mode full`) the hyper-parameters |
+| `run_final.py` | `final_runs_<subset>.csv`, `final_summary_<subset>.csv` | the main sweep: instances × budgets × repeats |
+| `run_ablation.py` | `ablation_operators_<subset>.csv`, `ablation_mechanisms_<subset>.csv` | remove one component at a time |
+| `run_comparison.py` | `comparison_runs_<subset>.csv`, `comparison_ranking_<subset>.csv` | the comparison methods, plus a like-for-like Green ACO row |
+| `make_figures.py` | `figures/*` | **reads** results, never computes |
+| `verify_results.py` | — | schema, coverage and internal-consistency checks |
+
+Artifact names encode their scope (`_all54`, `_core`) so results from different
+subsets never silently overwrite one another.
+
+### The comparison set
+
+Seven methods, all re-run by this repository under the same meter and the same
+green metrics — so every row of the comparison table comes from one machine in
+one session, rather than mixing fresh numbers with historical rows:
+
+`AG Classique` · `AG Adaptatif` · `AG + KC` · `AS-SAT` · `AS-SAT Elitiste` ·
+`MMAS` · `ACS`
+
+Three further variants present in the earlier codebase — `AG + Loc.Search`,
+`FACO`, `NL-ACO` — do not terminate within the time budget on any comparison
+instance. They are excluded rather than reported as zeros, and the exclusion is
+recorded in the run manifest.
+
+### Figures
+
+| figure | reads |
+|---|---|
+| `fig_operator_profiles.png` | energy share, cost by regime, gain per Joule |
+| `fig_operator_tests.png` | Kruskal-Wallis / Mann-Whitney on measured gains |
+| `fig_ablation.png` | ablation, z-scored within each instance and budget |
+| `fig_convergence.png` | search depth and quality against budget |
+| `fig_method_comparison.png` | Green ACO against the comparison methods |
+| `table_summary_ranking.md` | the ranking table |
+
+---
+
+## Layout
+
+```
+src/greenaco/
+  wcnf.py       WCNF parsing (weighted format -> unweighted problem)
+  data.py       manifest handling, subset selection, instance loading
+  config.py     run configuration and the tuned hyper-parameters
+  operators.py  the three operators; reference and indexed backends
+  scheduler.py  the EI/J scheduler (EWMA, Thompson sampling, budget penalty)
+  solver.py     the Green ACO search loop
+  energy.py     CodeCarbon measurement and CO2 accounting
+  profile.py    dual-regime operator profiling
+  metrics.py    statistical tests, ranking, context standardisation
+  runner.py     parallelism, checkpointing, provenance manifests
+  comparison/   the GA and ACO variants used for the comparison
+scripts/        one script per stage, plus the figure builder
+data/           manifest, instance files, comparison calibration artifacts
+configs/        tuned parameters
+results/        generated CSVs; results/shipped/ holds the recorded results
+figures/        generated figures and tables
+tests/          the test suite, run with `pytest`
+docs/           BACKENDS.md — why the two backends exist
+```
+---
+
+## Hyper-parameters
+
+`configs/best_params.json` holds the tuned values, obtained by the finetuning
+stage and recorded in `results/shipped/finetune_d_best_params.csv`:
+
+| parameter | value |
+|---|---|
+| `alpha_ewma` | 0.632961 |
+| `max_overrun_factor` | 1.176985 |
+| `stagnation_window` | 8 |
+| `stagnation_epsilon` | 0.185932 |
+| `best_stagnation_limit` | 13 |
+| `plateau_tolerance_pct` | 0.008385 |
+| `rho_base` | 0.250334 |
+| `rho_stagnant` | 0.038892 |
+
+`--mode full` re-runs the search (Optuna TPE, seeded). It searches, so it may
+land on different values; what was actually used is always recorded.
+
+---
+
+## Parallelism
+
+Default `min(4, cpu_count - 1)` workers. Set `--n-jobs` explicitly and keep it
+fixed for runs that are meant to be comparable. Instances above 400 000 clauses
+run **serially**: they are the slowest and the most memory-hungry, and running
+several at once risks exhausting RAM. Each task writes an atomic JSON
+checkpoint, so an interrupted run resumes rather than restarting.
+
+---
+
+## Tests
+
+```bash
+pytest -q
+```
+
+The tests that matter most:
+
+- `test_operators.py::test_backends_agree_exactly` — the indexed backend is
+  required to return **identical assignments and gains** under a fixed seed.
+- `test_energy.py::test_green_metrics_match_hand_computation` — reproduces a
+  known row from the original measurements exactly.
+- `test_comparison.py` — every comparison method solves, and its reported
+  quality is confirmed by an independent recount.
+- `test_solver.py::test_same_seed_gives_same_quality` — seed reproducibility.
+- `test_profiling.py` — manifest integrity and shipped artifacts.
+
+`scripts/prepare_data.py` is the end-to-end guard: all 54 instances must parse
+to the sizes the manifest declares, or it fails.
+
+---
+
+## Assumptions, stated plainly
+
+- **Energy is measured.** Absolute Joule and CO2 figures are properties of the
+  machine that produced them. They are not comparable across machines, and not
+  comparable across different `--n-jobs` on the same machine.
+- **The problem is unweighted.** Weights and hard-clause markers in the source
+  `.wcnf.xz` files are discarded, matching the original measurements.
+- **`results/shipped/` are historical records.** They were produced on the
+  original hardware. Re-running regenerates `results/`; the shipped copies are
+  kept so figures can be built without a multi-hour sweep, and so the recorded
+  numbers remain inspectable.
+- **`results/checkpoints/` is disposable.** Delete it to force a clean re-run.
+- **`data/mse24/` is git-ignored.** Fetch the instances from the MaxSAT
+  Evaluation 2024 distribution and place the 54 files named in the manifest.

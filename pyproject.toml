@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "greenaco"
+version = "1.0.0"
+description = "Green ACO: an energy-aware ant colony optimisation solver for MAX-SAT"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+dependencies = [
+  "numpy>=1.24",
+  "pandas>=2.0",
+  "scipy>=1.10",
+  "matplotlib>=3.7",
+  "joblib>=1.3",
+  # Energy measurement. Pinned because CodeCarbon 3.x replaced the running-total
+  # API used by 2.x with per-task start_task/stop_task calls.
+  "codecarbon>=3.0,<4",
+]
+
+[project.optional-dependencies]
+# Hyper-parameter search. Optuna's TPE results are version-sensitive, so the
+# search is pinned rather than left floating.
+finetune = ["optuna>=3.4,<5"]
+# Budget predictor. Kept out of the core path: nothing in the experiment
+# pipeline imports it.
+predictor = ["xgboost>=2.0", "scikit-learn>=1.3"]
+dev = ["pytest>=7.4"]
+
+[project.scripts]
+greenaco-reproduce = "greenaco.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]

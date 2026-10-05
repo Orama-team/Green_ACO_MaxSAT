@@ -1,0 +1,2 @@
+source,score_per_joule,max_overrun_factor,stagnation_window,stagnation_epsilon,best_stagnation_limit,plateau_tolerance_pct,alpha_ewma,rho_base,rho_stagnant
+old_best_params_4hard,0.09232611111111112,1.176985004103839,8,0.1859318489300223,13,0.0083848685041001,0.632961025569209,0.2503338776540595,0.0388915660358909

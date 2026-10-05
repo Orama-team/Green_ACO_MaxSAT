@@ -1,0 +1,13 @@
+instance,budget_j,qualite_pct,energie_joules,budget_utilise_pct,score_per_joule,co2_micrograms,pheromone_savings_pct,stopped_reason,nb_iterations
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,98.97195117880706,407.115069,100.0,0.243106,54960.5343,0.0,budget_exhausted,12
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,99.22785077715595,1008.227822,100.0,0.098418,136110.756,0.0,budget_exhausted,33
+decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,99.39140399870938,2007.534686,100.0,0.049509,271017.1826,0.0,budget_exhausted,78
+min-fill-MinFill_R0_myciel5,400,94.03041025500362,407.536509,100.0,0.230729,55017.4287,0.0,budget_exhausted,21
+min-fill-MinFill_R0_myciel5,1000,95.86270583609915,1016.410901,100.0,0.094315,137215.4716,0.0,budget_exhausted,27
+min-fill-MinFill_R0_myciel5,2000,96.04922694315678,2000.176394,100.0,0.04802,270023.8132,0.0,budget_exhausted,52
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,98.58574862793124,407.880736,100.0,0.241702,55063.8994,0.0,budget_exhausted,12
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,98.69551412890642,1002.453675,100.0,0.098454,135331.2461,0.0,budget_exhausted,32
+decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,98.83067991109901,2014.660698,100.0,0.049056,271979.1942,0.0,budget_exhausted,70
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,400,99.14050391320498,423.974483,100.0,0.233836,57236.5552,0.0,budget_exhausted,15
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,1000,99.34545081914716,1016.797087,100.0,0.097704,137267.6067,0.0,budget_exhausted,38
+decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,2000,99.99871908183786,1814.061245,90.7,0.055124,244898.2681,13.33,best_plateau,45

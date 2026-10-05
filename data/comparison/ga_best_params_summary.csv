@@ -1,0 +1,5 @@
+methode,pop_size,max_gen,crossover_prob,mutation_prob,P1,P2,ls_depth,ls_fraction
+AG Classique,50,500,0.95,,,,,
+AG Adaptatif,50,500,,,0.8,0.05,,
+AG + KC,50,500,0.75,,,,,
+AG + Loc.Search,50,500,0.85,,,,10.0,0.05

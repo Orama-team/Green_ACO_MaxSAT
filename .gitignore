@@ -34,7 +34,17 @@ Thumbs.db
 # Logs
 *.log
 
+# ── Generated experiment artifacts ──────────────────────────────────────────
+# The benchmark instances are not redistributed: they come from the MaxSAT
+# Evaluation 2024 distribution. scripts/prepare_data.py names every file.
+data/mse24/
 
-# Benchmark dumps
-Bechmarks/*.pck
-*.pck
+# Checkpoints are disposable resume state; deleting them forces a clean re-run.
+results/checkpoints/
+
+# Manifests record the machine and arguments of a run, so they are per-run.
+results/MANIFEST.json
+
+# figures/ and results/*.csv are generated but intentionally tracked: the
+# figures are the deliverable, and results/shipped/ is the recorded evidence
+# behind them.

@@ -1,0 +1,33 @@
+method,family,instance,n_vars,n_clauses,qualite_solution,qualite_pct,energie_joules,score_per_joule,co2_micrograms,temps_exec,timeout,aggregated
+AG Classique,GA,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,79504.0,88.4567,4170.987318,0.021208,563083.2879,301.3910720348358,False,False
+AG Classique,GA,min-fill-MinFill_R0_myciel5,15416.0,109371.0,96418.0,88.1568,4182.234924,0.021079,564601.7148,300.2219383716583,False,False
+AG Classique,GA,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,101940.0,92.4752,4179.004543,0.022129,564165.6133,300.5850658416748,False,False
+AG Classique,GA,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,69437.0,88.9431,4154.210591,0.02141,560818.4297,300.7407855987549,False,False
+AG Adaptatif,GA,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,79380.0,88.3187,5302.170931,0.016657,715793.0757,390.47303771972656,False,False
+AG Adaptatif,GA,min-fill-MinFill_R0_myciel5,15416.0,109371.0,95758.0,87.5534,9503.498867,0.009213,1282972.347,694.654464006424,False,False
+AG Adaptatif,GA,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,103851.0,94.2087,7210.093882,0.013066,973362.6741,527.4965856075287,False,False
+AG Adaptatif,GA,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,68481.0,87.7186,4427.323803,0.019813,597688.7134,324.7384090423584,False,False
+AG + KC,GA,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,79457.0,88.4044,4191.866715,0.02109,565902.0065,301.3859074115753,False,False
+AG + KC,GA,min-fill-MinFill_R0_myciel5,15416.0,109371.0,96813.0,88.518,4524.531881,0.019564,610811.8039,302.4875979423523,False,False
+AG + KC,GA,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,100371.0,91.0518,4222.539493,0.021563,570042.8315,303.0661475658417,False,False
+AG + KC,GA,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,69099.0,88.5102,4174.616213,0.021202,563573.1887,301.8879408836365,False,False
+AS-SAT,ACO,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,85639.0,95.2825,6935.669253,0.013738,936315.3491,478.7086203098297,False,False
+AS-SAT,ACO,min-fill-MinFill_R0_myciel5,15416.0,109371.0,104846.0,95.8627,8408.863547,0.0114,1135196.5788,589.6062505245209,False,False
+AS-SAT,ACO,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,103347.0,93.7515,4571.535206,0.020508,617157.2528,317.2236547470093,False,False
+AS-SAT,ACO,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,74713.0,95.7012,5366.727156,0.017832,724508.1661,358.2203452587128,False,False
+AS-SAT Elitiste,ACO,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,85877.0,95.5473,6334.447745,0.015084,855150.4456,455.3678538799286,False,False
+AS-SAT Elitiste,ACO,min-fill-MinFill_R0_myciel5,15416.0,109371.0,104924.0,95.934,7849.416927,0.012222,1059671.2851,577.2849690914154,False,False
+AS-SAT Elitiste,ACO,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,103859.0,94.216,4145.751962,0.022726,559676.5148,304.8469157218933,False,False
+AS-SAT Elitiste,ACO,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,74913.0,95.9574,4483.934097,0.0214,605331.103,329.4143030643463,False,False
+MMAS,ACO,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,83318.0,92.7002,6194.40088,0.014965,836244.1188,452.7217922210693,False,False
+MMAS,ACO,min-fill-MinFill_R0_myciel5,15416.0,109371.0,105007.0,96.0099,9043.277074,0.010617,1220842.405,611.0576634407043,False,False
+MMAS,ACO,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,104774.0,95.046,4509.984952,0.021075,608847.9685,317.6421682834625,False,False
+MMAS,ACO,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,73464.0,94.1014,5313.342312,0.01771,717301.2121,354.6353359222412,False,False
+ACS,ACO,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,10503.0,89879.0,88118.0,98.0407,6293.547695,0.015578,849628.9388,455.6710424423218,False,False
+ACS,ACO,min-fill-MinFill_R0_myciel5,15416.0,109371.0,102793.0,93.9856,7411.310323,0.012681,1000526.8936,552.3025376796722,False,False
+ACS,ACO,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,5959.0,110235.0,103701.0,94.0727,4075.371359,0.023083,550175.1335,304.33061385154724,False,False
+ACS,ACO,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,9973.0,78069.0,74726.0,95.7179,4470.681688,0.02141,603542.0279,333.0147454738617,False,False
+Green ACO,ACO + EI/J,decision-tree-car-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,,,,99.291967161065,3853.3291289,0.0425424,520199.4324,,False,True
+Green ACO,ACO + EI/J,decision-tree-soybean-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,,,,99.95004394797448,3325.3822721999995,0.0303012,448926.60675,,False,True
+Green ACO,ACO + EI/J,decision-tree-vote-un-formula_0.8_2021_atleast_15_max-3_reduced_incomplete_tree,,,,99.98437279842192,2546.2095188,0.0406804,343738.28504999995,,False,True
+Green ACO,ACO + EI/J,min-fill-MinFill_R0_myciel5,,,,95.17266917190116,1032.4388419000002,0.0922128,139379.24366,,False,True

@@ -1,0 +1,10 @@
+{
+  "alpha_ewma": 0.632961,
+  "max_overrun_factor": 1.176985,
+  "stagnation_window": 8,
+  "stagnation_epsilon": 0.185932,
+  "best_stagnation_limit": 13,
+  "plateau_tolerance_pct": 0.008385,
+  "rho_base": 0.250334,
+  "rho_stagnant": 0.038892
+}
