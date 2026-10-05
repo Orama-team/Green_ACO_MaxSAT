@@ -65,19 +65,22 @@ FALLBACK_PROFILE = {
 
 # Ablation axes. Axis A removes one operator at a time; axis B disables one
 # green mechanism at a time while holding the operator pool fixed.
+#
+# Names match the configurations tabulated in the paper (Table 9) so that a
+# generated table can be compared against it directly.
 ABLATION_OPERATOR_CONFIGS: Dict[str, list] = {
     "full": list(OPERATOR_POOL),
     "no_walksat": ["focused_vns", "clause_restart_greedy"],
     "no_focused_vns": ["walksat", "clause_restart_greedy"],
-    "no_clause_restart_greedy": ["walksat", "focused_vns"],
+    "no_greedy_restart": ["walksat", "focused_vns"],
 }
 
 ABLATION_GREEN_FLAGS: Dict[str, dict] = {
     "full": {},
-    "no_sparse_update": {"use_sparse_update": False},
+    "no_sparse_ph": {"use_sparse_update": False},
     "no_profiling": {"use_profiling": False},
-    "no_overrun_guard": {"max_overrun_factor": 9999.0},
-    "no_frugal_skip": {"use_frugal_skip": False},
+    "no_overrun_fix": {"max_overrun_factor": 9999.0},
+    "no_caching": {"use_pheromone_cache": False},
 }
 
 

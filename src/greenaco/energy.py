@@ -25,12 +25,30 @@ from __future__ import annotations
 import math
 from typing import Callable, Dict, Optional, Tuple
 
-# Grid carbon intensities, in gCO2eq per kWh. The default region (DZ) follows
-# the value used throughout the original experiments.
+# Grid carbon intensities, in gCO2eq per kWh.
+#
+# These are the values tabulated in the paper (Table 1), sourced from
+# lowcarbonpower.org, May 2025 - Apr 2026. Note they differ from the constants
+# used by the earlier notebook (which carried NO 26 / FR 56 / GB 233 / DE 385 /
+# US 386 / CN 581). Only DZ is used for the reported experiments and both agree
+# on 486, so no reported figure depends on this change; the table is
+# reproduced for reference and should match the published one.
 REGIONAL_CI = {
-    "FR": 56, "NO": 26, "GB": 233, "DE": 385,
-    "US": 386, "DZ": 486, "CN": 581, "DEFAULT": 400,
+    "NO": 31, "FR": 42, "GB": 216,
+    "DE": 298, "US": 343, "DZ": 486,
+    "CN": 477, "DEFAULT": 400,
 }
+
+# Display names and codes, in the order the paper tabulates them (Table 1).
+REGIONAL_CI_TABLE = [
+    ("NO", "Norway (NO)", 31),
+    ("FR", "France (FR)", 42),
+    ("GB", "UK (GB)", 216),
+    ("DE", "Germany (DE)", 298),
+    ("US", "USA (US)", 343),
+    ("DZ", "Algeria (DZ)", 486),
+    ("CN", "China (CN)", 477),
+]
 
 JOULES_PER_KWH = 3_600_000.0
 

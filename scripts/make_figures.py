@@ -31,8 +31,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from figures.style import (FAMILY_COLORS, OPERATOR_COLORS,  # noqa: E402
                            apply_style, save, short_instance)
 from greenaco import paths  # noqa: E402
-from greenaco.metrics import (rank_methods, run_operator_tests,  # noqa: E402
-                              tests_to_frame, zscore_by_context)
+from greenaco.metrics import (rank_methods, reference_profiles_only,  # noqa: E402
+                              run_operator_tests, tests_to_frame,
+                              zscore_by_context)
 
 
 def read(name: str, results: Path, shipped: Path):
@@ -99,9 +100,15 @@ def fig_operator_profiles(df: pd.DataFrame) -> None:
 
 
 def fig_operator_tests(df: pd.DataFrame, out: Path) -> None:
-    """Non-parametric comparison of the operators on measured gains."""
+    """Non-parametric comparison of the operators on measured gains.
+
+    Run on the directly measured reference instances only: the rest of the
+    table is nearest-neighbour copies of those same rows, which would distort
+    the p-values. See ``metrics.reference_profiles_only``.
+    """
     apply_style()
-    tests = run_operator_tests(df, value_col="mean_df")
+    measured = reference_profiles_only(df)
+    tests = run_operator_tests(measured, value_col="mean_df")
     kw = tests["kruskal_wallis"]
     table = tests_to_frame(tests)
     if not table.empty:

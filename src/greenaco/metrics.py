@@ -60,6 +60,21 @@ def wilcoxon_paired(sample_a: Sequence[float],
             "significant": bool(p < ALPHA)}
 
 
+def reference_profiles_only(df: pd.DataFrame) -> pd.DataFrame:
+    """Restrict a profiling table to the directly measured instances.
+
+    Profiles are transferred to unprofiled instances by nearest-neighbour
+    matching, so a table covering the whole benchmark contains many identical
+    copies of the same handful of measured rows. Running the statistical tests
+    over all of them would weight those few instances by however many
+    neighbours they happen to have, and shift every p-value. The tests are
+    therefore computed on the directly profiled rows only (``n_runs > 0``).
+    """
+    if "n_runs" not in df.columns:
+        return df
+    return df[df["n_runs"].fillna(0) > 0]
+
+
 def operator_groups(df: pd.DataFrame, value_col: str = "mean_df",
                     group_col: str = "operator",
                     regime: str | None = None) -> Dict[str, List[float]]:
