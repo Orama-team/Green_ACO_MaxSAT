@@ -46,10 +46,34 @@ def read(name: str, results: Path, shipped: Path):
 
     Falls back to the shipped CSV so figures can always be produced, even when a
     stage has not been re-run.
+
+    A scoped artifact is not stored twice: if ``final_summary_core.csv`` is
+    absent, the full-benchmark file is loaded and filtered to the core
+    instances. The core subset is therefore a *view* of the benchmark rather
+    than a second copy of it, which keeps the two from drifting apart.
     """
     for candidate in (results / name, shipped / name):
         if candidate.exists():
             return pd.read_csv(candidate)
+
+    stem, _, scope = Path(name).stem.rpartition("_")
+    if scope in ("all54", "core") and stem:
+        for base in (results / f"{stem}_all54.csv", shipped / f"{stem}_all54.csv"):
+            if not base.exists():
+                continue
+            df = pd.read_csv(base)
+            if scope == "all54":
+                return df
+            col = "benchmark" if "benchmark" in df.columns else "instance"
+            if col not in df.columns:
+                return df
+            manifest = load_manifest()
+            keep = set(manifest.query("mandatory == True")["benchmark"])
+            filtered = df[df[col].astype(str).isin(keep)]
+            print(f"  [view]  {name} <- {base.name} "
+                  f"({filtered[col].nunique()} core instances)")
+            return filtered.reset_index(drop=True)
+
     print(f"  [skip] {name} not found in results/ or results/shipped/")
     return None
 
@@ -130,6 +154,23 @@ def fig_operator_tests(df: pd.DataFrame, out: Path) -> None:
                  f"Kruskal-Wallis H={kw['H']:.2f}, p={kw['p_value']:.2e}"
                  f"{' (significant)' if kw['significant'] else ''}")
     save(fig, "fig_operator_tests.png")
+
+
+def table_operator_tests_recorded(out: Path) -> None:
+    """Write the operator test table from the recorded statistics.
+
+    ``results/shipped/stats_operator_tests.csv`` holds the Kruskal-Wallis and
+    Wilcoxon results computed on the measured reference instances. They are
+    kept as the authoritative values and are used whenever the per-operator
+    profiles are unavailable to recompute them, so the published table is
+    always reproducible.
+    """
+    stats = read("stats_operator_tests.csv", paths.SHIPPED, paths.SHIPPED)
+    if stats is None or stats.empty:
+        print("  [skip] no recorded operator-test statistics")
+        return
+    stats.to_csv(out / "table_operator_tests.csv", index=False)
+    print("  -> wrote figures/table_operator_tests.csv (from recorded statistics)")
 
 
 def fig_ablation(df: pd.DataFrame) -> None:
@@ -323,6 +364,8 @@ def main() -> int:
     if profiles is not None:
         fig_operator_profiles(profiles)
         fig_operator_tests(profiles, out)
+    else:
+        table_operator_tests_recorded(out)
 
     for axis in ("operators", "mechanisms"):
         abl = read(f"ablation_{axis}_{tag}.csv", results, paths.SHIPPED)

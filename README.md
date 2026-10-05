@@ -183,6 +183,36 @@ figures/        generated figures and tables
 tests/          the test suite, run with `pytest`
 docs/           BACKENDS.md — why the two backends exist
 ```
+
+### One file per result, not two
+
+`results/shipped/` stores each result **once**, at full scope. There is no
+separate `*_core.csv` copy next to a `*_all54.csv`: when a figure needs the
+core subset and no core-scoped file exists, the full-benchmark file is loaded
+and filtered to the four core instances listed in the manifest. The subset is
+therefore a *view* derived at load time, which is what stops the two copies
+drifting apart as results change.
+
+The same reasoning applies to the ablation: the operator and mechanism splits
+(`ablation_operators_core.csv`, `ablation_mechanisms_core.csv`) together
+reconstruct the unsplit eight-configuration run exactly, so the unsplit file is
+not stored.
+
+### What each experiment covers
+
+Two experiments were run on the four core instances only, and the repository
+does not pretend otherwise:
+
+| Artifact | Scope |
+|---|---|
+| `ablation_*_core.csv` | 4 core instances, 8 configurations x 3 budgets |
+| `comparison_runs_core.csv` | 4 core instances, all methods |
+| `final_runs_all54.csv`, `final_summary_all54.csv` | 54 instances |
+| `operator_profiles_all54.csv` | 54 instances |
+
+`make_figures.py --subset all` therefore reports the ablation and method
+comparison as skipped rather than silently substituting core numbers into a
+figure captioned for the full benchmark.
 ---
 
 ## Hyper-parameters
